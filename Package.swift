@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 5.10
 
 import PackageDescription
 
@@ -10,6 +10,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/vmanot/CorePersistence.git", branch: "main"),
         .package(url: "https://github.com/vmanot/Merge.git", branch: "master"),
+        .package(url: "https://github.com/jpsim/Yams.git", from: "5.0.6"),
     ],
     targets: [
         .executableTarget(
@@ -32,7 +33,8 @@ let package = Package(
         .target(
             name: "GitHubActionsCore",
             dependencies: [
-                "_GitHubActionsTypes"
+                "_GitHubActionsTypes",
+                "Yams"
             ]
         ),
         .target(
