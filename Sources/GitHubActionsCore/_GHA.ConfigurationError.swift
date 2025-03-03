@@ -12,8 +12,5 @@ public extension _GHA {
         
         /// The configuration type is not supported for serialization
         case unsupportedConfigurationType
-        
-        /// Failed to serialize the configuration to YAML
-        case yamlSerializationFailed
     }
 } 

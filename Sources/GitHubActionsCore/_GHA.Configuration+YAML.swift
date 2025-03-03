@@ -30,16 +30,9 @@ extension _GHA.Configuration {
     private func generateWorkflowYAML(_ workflow: _GHA.Workflow, at outputURL: URL) throws {
         try FileManager.default.createDirectory(at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         
-        let encoder = JSONEncoder()
-        let data = try encoder.encode(workflow)
-        
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw _GHA.ConfigurationError.unsupportedConfigurationType
-        }
-        
-        guard let yaml = try? Yams.dump(object: json) else {
-            throw _GHA.ConfigurationError.yamlSerializationFailed
-        }
+        // Directly encode to YAML using YamlEncoder
+        let encoder = YAMLEncoder()
+        let yaml = try encoder.encode(workflow)
         
         let finalOutputURL: URL
         if outputURL.pathExtension.lowercased() == "yml" || outputURL.pathExtension.lowercased() == "yaml" {
@@ -53,16 +46,9 @@ extension _GHA.Configuration {
     private func generateActionYAML(_ action: _GHA.Action, at outputURL: URL) throws {
         try FileManager.default.createDirectory(at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         
-        let encoder = JSONEncoder()
-        let data = try encoder.encode(action)
-        
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw _GHA.ConfigurationError.unsupportedConfigurationType
-        }
-        
-        guard let yaml = try? Yams.dump(object: json) else {
-            throw _GHA.ConfigurationError.yamlSerializationFailed
-        }
+        // Directly encode to YAML using YAMLEncoder
+        let encoder = YAMLEncoder()
+        let yaml = try encoder.encode(action)
         
         let finalOutputURL: URL
         if outputURL.pathExtension.lowercased() == "yml" || outputURL.pathExtension.lowercased() == "yaml" {

@@ -1,0 +1,21 @@
+name: Authorize GitHub
+description: |
+  Authorizes GitHub so that further commands can access all internal Preternatural repositories.
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Load Secrets from 1Password
+      uses: 1password/load-secrets-action@v2
+      with:
+        export-env: true
+      env:
+        OP_SERVICE_ACCOUNT_TOKEN: "sample_token"
+        GITHUB_PAT: op://Services/github-pat-internal-export-action/credential
+
+    - name: Setup PAT for Private Repos
+      shell: bash
+      run: |
+        {
+          git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
+        } > /dev/null 2>&1

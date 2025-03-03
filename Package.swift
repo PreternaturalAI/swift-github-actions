@@ -11,6 +11,7 @@ let package = Package(
         .package(url: "https://github.com/vmanot/CorePersistence.git", branch: "main"),
         .package(url: "https://github.com/vmanot/Merge.git", branch: "master"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.0.6"),
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
     ],
     targets: [
         .executableTarget(
@@ -34,7 +35,8 @@ let package = Package(
             name: "GitHubActionsCore",
             dependencies: [
                 "_GitHubActionsTypes",
-                "Yams"
+                "Yams",
+                "Merge"
             ]
         ),
         .target(
@@ -56,7 +58,18 @@ let package = Package(
             dependencies: [
                 "_GitHubActionsTypes",
                 "GitHubActionsCore",
-                "GitHubActionsRunner"
+                "GitHubActionsRunner",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]
+        ),
+        .testTarget(
+            name: "GitHubActionsTests",
+            dependencies: [
+                "GitHubActionsCLT",
+            ],
+            path: "Tests",
+            resources: [
+                .copy("Resources")
             ]
         )
     ]

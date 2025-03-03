@@ -1,0 +1,133 @@
+name: Preternatural Release Plugin
+description: |
+  Updates the url and SHA of the binary target in the given Plugin Package repository
+
+inputs:
+  homebrew-repository:
+    description: 'Homebrew Repository from which to lookup the command line tools'
+    required: false
+    default: 'PreternaturalAI/homebrew-preternatural'
+  plugin-package-repository:
+    description: 'Plugin Package Repository to update'
+    required: true
+  tool-name:
+    description: 'Name of the command line tool'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Load Secrets From 1Password and Export Environment Variables
+      uses: 1password/load-secrets-action@v2
+      with:
+        export-env: true
+      env:
+        OP_SERVICE_ACCOUNT_TOKEN: "token"
+        GITHUB_PAT: op://abc/abc/abc
+    
+    - name: Setup PAT for Private Repos
+      shell: bash
+      run: |
+        {
+          git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
+        } > /dev/null 2>&1
+
+    - name: Fetch URL and SHA
+      shell: bash
+      run: |
+        # Clone homebrew repository
+        git clone https://github.com/${{ inputs.homebrew-repository }}.git homebrew-repo
+        
+        # Check if tool file exists
+        if [ ! -f "homebrew-repo/${{ inputs.tool-name }}.rb" ]; then
+          echo "Error: ${{ inputs.tool-name }}.rb not found in ${{ inputs.homebrew-repository }}"
+          exit 1
+        fi
+        
+        # Extract URL and SHA
+        URL=$(grep "url" "homebrew-repo/${{ inputs.tool-name }}.rb" | cut -d '"' -f 2)
+        SHA=$(grep "sha256" "homebrew-repo/${{ inputs.tool-name }}.rb" | cut -d '"' -f 2)
+        
+        if [ -z "$URL" ] || [ -z "$SHA" ]; then
+          echo "Error: Could not extract URL and SHA from ${{ inputs.tool-name }}.rb"
+          exit 1
+        fi
+        
+        echo "Successfully extracted URL and SHA:"
+        echo "URL: $URL"
+        echo "SHA: $SHA"
+        
+        # Export for next steps
+        echo "TOOL_URL=$URL" >> $GITHUB_ENV
+        echo "TOOL_SHA=$SHA" >> $GITHUB_ENV
+        
+        # Cleanup: Remove the homebrew repository
+        rm -rf homebrew-repo
+        echo "Cleaned up homebrew repository"
+
+    - name: Update Package.swift
+      shell: bash
+      run: |
+        # Clone plugin package repository
+        git clone https://github.com/${{ inputs.plugin-package-repository }}.git plugin-repo
+        cd plugin-repo
+        
+        # Check if Package.swift exists
+        if [ ! -f "Package.swift" ]; then
+          echo "Error: Package.swift not found in ${{ inputs.plugin-package-repository }}"
+          exit 1
+        fi
+        
+        # Check if binary target exists
+        if ! grep -A 3 "\.binaryTarget(" Package.swift | grep -q "name: \"${{ inputs.tool-name }}\""; then
+          echo "Error: Binary target '${{ inputs.tool-name }}' not found in Package.swift"
+          exit 1
+        fi
+        
+        # Update binary target URL and checksum
+        awk -v name="${{ inputs.tool-name }}" -v url="$TOOL_URL" -v sha="$TOOL_SHA" '
+            /\.binaryTarget\(/ {
+                p = 1
+                print
+                next
+            }
+            p && /name:/ {
+                if ($0 ~ "\"" name "\"") {
+                    found = 1
+                }
+                print
+                next
+            }
+            p && found && /url:/ {
+                match($0, /^[[:space:]]*/)
+                spaces = substr($0, RSTART, RLENGTH)
+                print spaces "url: \"" url "\","
+                next
+            }
+            p && found && /checksum:/ {
+                match($0, /^[[:space:]]*/)
+                spaces = substr($0, RSTART, RLENGTH)
+                print spaces "checksum: \"" sha "\""
+                p = 0
+                found = 0
+                next
+            }
+            { print }
+        ' Package.swift > Package.swift.tmp && mv Package.swift.tmp Package.swift
+        
+        # Check if changes were made
+        if ! git diff --quiet Package.swift; then
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add Package.swift
+          git commit -m "Update ${{ inputs.tool-name }} binary target URL and checksum"
+          git push
+          echo "Successfully updated and pushed changes to Package.swift in ${{ inputs.plugin-package-repository }}"
+        else
+          echo "No changes detected."
+        fi
+        
+        # Cleanup: Remove the plugin repository
+        cd ..
+        rm -rf plugin-repo
+        echo "Cleaned up plugin repository"
