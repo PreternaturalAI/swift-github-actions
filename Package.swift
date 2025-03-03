@@ -30,7 +30,10 @@ let package = Package(
             name: "_GitHubActionsTypes"
         ),
         .target(
-            name: "GitHubActionsCore"
+            name: "GitHubActionsCore",
+            dependencies: [
+                "_GitHubActionsTypes"
+            ]
         ),
         .target(
             name: "GitHubActionsDescription",
