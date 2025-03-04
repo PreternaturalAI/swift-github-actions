@@ -1,21 +1,17 @@
 name: Preternatural Internal Release Plugin GitHub Action
-
 on:
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ghcr.io/cirruslabs/macos-runner:sequoia
     steps:
-
-    - name: Run Update Plugin Action (preternatural)
-      uses: PreternaturalAI/internal-github-action/preternatural-release-plugin@aksh1t/ENG-1792
-      with:
-        plugin-package-repository: 'PreternaturalAI/command-line-tool-plugin'
-        tool-name: 'preternatural'
-
-    - name: Run Update Plugin Action (lint-my-swift)
-      uses: PreternaturalAI/internal-github-action/preternatural-release-plugin@aksh1t/ENG-1792
-      with:
-        plugin-package-repository: 'PreternaturalAI/lint-my-swift-plugin'
-        tool-name: 'lint-my-swift'
+      - name: Run Update Plugin Action (preternatural)
+        uses: PreternaturalAI/internal-github-action/preternatural-release-plugin@aksh1t/ENG-1792
+        with:
+          plugin-package-repository: 'PreternaturalAI/command-line-tool-plugin'
+          tool-name: 'preternatural'
+      - name: Run Update Plugin Action (lint-my-swift)
+        uses: PreternaturalAI/internal-github-action/preternatural-release-plugin@aksh1t/ENG-1792
+        with:
+          plugin-package-repository: 'PreternaturalAI/lint-my-swift-plugin'
+          tool-name: 'lint-my-swift'

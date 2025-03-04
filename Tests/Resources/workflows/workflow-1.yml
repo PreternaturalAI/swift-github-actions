@@ -1,41 +1,38 @@
 name: build-swallow
-
-on: 
+on:
   push:
     branches:
-      - build-swallow 
+      - build-swallow
   workflow_dispatch:
-  
 jobs:
   build-swallow:
     strategy:
       matrix:
         xcode_version:
-          - "15.4" 
-          - "16.1_beta" 
-    env: 
+          - "15.4"
+          - "16.1_beta"
+    env:
       DEVELOPER_DIR: "/Applications/Xcode_${{ matrix.xcode_version }}.app/Contents/Developer"
     runs-on: ghcr.io/cirruslabs/macos-runner:sequoia
     steps:
-    - name: Xcode Select ${{ matrix.xcode_version }}
-      run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode_version }}.app
-    - name: Get swift version
-      run: swift --version
-    - uses: actions/checkout@v2
-
-    - name: Clone Swallow
-      env:
-        COMMIT: 2ac7c7f06110bc3b397677e82d3a232980c20617
-      run: |
-        git clone https://github.com/vmanot/Swallow
-        cd Swallow
-        git checkout $COMMIT
-    - name: Build Scipio
-      run: |
-        swift build -c release
-    - name: Build XCFrameworks
-      run: |
-        swift run -c release scipio prepare Swallow
-    - name: List XCFrameworks
-      run: |
-        ls -l Swallow/XCFrameworks
+      - name: Xcode Select ${{ matrix.xcode_version }}
+        run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode_version }}.app
+      - name: Get swift version
+        run: swift --version
+      - uses: actions/checkout@v2
+      - name: Clone Swallow
+        env:
+          COMMIT: 2ac7c7f06110bc3b397677e82d3a232980c20617
+        run: |-
+          git clone https://github.com/vmanot/Swallow
+          cd Swallow
+          git checkout $COMMIT
+      - name: Build Scipio
+        run: |-
+          swift build -c release
+      - name: Build XCFrameworks
+        run: |-
+          swift run -c release scipio prepare Swallow
+      - name: List XCFrameworks
+        run: |-
+          ls -l Swallow/XCFrameworks

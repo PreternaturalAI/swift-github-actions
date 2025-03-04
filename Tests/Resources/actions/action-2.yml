@@ -1,12 +1,10 @@
 name: 'Preternatural Upload Logs Action'
 description: 'Processes and uploads logs from the default derived data path'
-
 inputs:
   zip-name:
     description: 'Name of the final log zip file (without .zip extension)'
     required: false
     default: ''
-
 runs:
   using: 'composite'
   steps:
@@ -14,28 +12,27 @@ runs:
       shell: bash
       run: |
         rm -rf ./logs
-
     - name: Find logs
       continue-on-error: true
       shell: bash
-      run: |
+      run: |-
         DERIVED_DATA_PATH="$HOME/Library/Developer/Xcode/DerivedData"
         echo "Searching for logs in: $DERIVED_DATA_PATH"
-        
+
         mkdir -p ./logs
-        
+
         # Find and copy xcresult bundles
         find "$DERIVED_DATA_PATH" -name "*.xcresult" -type d -print0 | while IFS= read -r -d '' result; do
           cp -R "$result" "./logs"
           echo "Copied $result to ./logs"
         done
-        
+
         # Check if any logs were found and copied
         if [ -z "$(ls -A ./logs)" ]; then
           echo "No log files found in $DERIVED_DATA_PATH"
           exit 1
         fi
-        
+
         # Create zip archive with dynamic name
         cd ./logs
         if [ -n "${{ inputs.zip-name }}" ]; then
@@ -46,18 +43,17 @@ runs:
         fi
         zip -r "../$ZIP_NAME" ./*
         cd ..
-        
+
         # Set output path for upload step
         echo "ZIP_PATH=$ZIP_NAME" >> $GITHUB_ENV
         # Set artifact name (zip name without extension) for upload step
         echo "ARTIFACT_NAME=${ZIP_NAME%.zip}" >> $GITHUB_ENV
-        
+
         # Clean up Logs and ResultBundle folders in DerivedData
         echo "Cleaning up Logs and ResultBundle folders in DerivedData..."
         find "$DERIVED_DATA_PATH" -type d -name "Logs" -exec rm -rf {} +
         find "$DERIVED_DATA_PATH" -type d -name "ResultBundle" -exec rm -rf {} +
         echo "Cleanup completed"
-
     - name: Upload logs
       continue-on-error: true
       uses: actions/upload-artifact@v4

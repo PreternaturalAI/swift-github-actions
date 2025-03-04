@@ -5,23 +5,22 @@
 import Foundation
 
 public extension _GHA.Action {
-    struct Input: Encodable {
-        public let description: String?
+    enum InputType: String, Encodable {
+        case boolean
+        case string
+        case number
+    }
+    
+    struct Input: Equatable {
+        public let description: _GHA.YAMLString?
         public let required: Bool?
-        public let defaultValue: String?
+        public let defaultValue: _GHA.YAMLString?
         public let type: InputType?
 
-        private enum CodingKeys: String, CodingKey {
-            case description
-            case required
-            case defaultValue = "default"
-            case type
-        }
-
         public init(
-            description: String? = nil,
+            description: _GHA.YAMLString? = nil,
             required: Bool? = nil,
-            defaultValue: String? = nil,
+            defaultValue: _GHA.YAMLString? = nil,
             type: InputType? = nil
         ) {
             self.description = description
@@ -30,10 +29,13 @@ public extension _GHA.Action {
             self.type = type
         }
     }
+}
 
-    enum InputType: String, Encodable {
-        case boolean
-        case string
-        case number
+extension _GHA.Action.Input: Encodable {
+    private enum CodingKeys: String, CodingKey {
+        case description
+        case required
+        case defaultValue = "default"
+        case type
     }
 }

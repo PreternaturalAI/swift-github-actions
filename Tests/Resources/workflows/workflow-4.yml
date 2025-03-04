@@ -1,76 +1,63 @@
 name: Build and Test
-
-on: 
+on:
   push:
     branches:
       - main
   pull_request:
     branches:
       - '*'
-
 jobs:
   Tests:
     runs-on: ghcr.io/cirruslabs/macos-runner:sequoia
     steps:
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '16.2'
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.2'
+      - name: Authorize Preternatural GitHub
+        uses: PreternaturalAI/internal-github-action/preternatural-authorize-github@main
+      - name: Get swift version
+        run: swift --version
+      - uses: actions/checkout@v4
+      - name: Install Preternatural
+        shell: bash
+        run: |-
+          brew tap PreternaturalAI/preternatural
+          brew install preternatural
+      - name: Restore DerivedData Cache
+        uses: cirruslabs/cache/restore@v4
+        with:
+          path: "~/Library/Developer/Xcode/DerivedData"
+          key: ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}
+          restore-keys: |-
+            ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data
+      - name: Run Preternatural Test Command
+        id: test
+        shell: bash
+        run: |-
+          PRETERNATURAL_CMD="script -q /dev/null preternatural test --build-before-testing --suppress-warnings"
 
-    - name: Authorize Preternatural GitHub
-      uses: PreternaturalAI/internal-github-action/preternatural-authorize-github@main
-
-    - name: Get swift version
-      run: swift --version
-
-    - uses: actions/checkout@v4
-
-    - name: Install Preternatural
-      shell: bash
-      run: |
-        brew tap PreternaturalAI/preternatural
-        brew install preternatural
-
-    - name: Restore DerivedData Cache
-      uses: cirruslabs/cache/restore@v4
-      with:
-        path: "~/Library/Developer/Xcode/DerivedData"
-        key: ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data
-
-    - name: Run Preternatural Test Command
-      id: test
-      shell: bash
-      run: |
-        PRETERNATURAL_CMD="script -q /dev/null preternatural test --build-before-testing --suppress-warnings"
-        
-        set +e  # Don't exit on error
-        eval ${PRETERNATURAL_CMD} 2>&1
-        TEST_STATUS=$?
-        echo "Test command exited with status: $TEST_STATUS"
-        if [ $TEST_STATUS -ne 0 ]; then
-          echo "::error::Test failed (status: $TEST_STATUS). Failing the workflow after uploading logs."
-          echo "test_failed=true" >> $GITHUB_OUTPUT
-        else
-          echo "test_failed=false" >> $GITHUB_OUTPUT
-        fi
-        exit 0
-
-    - name: Upload logs
-      uses: PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main
-      if: success() || failure()
-
-    - name: Save DerivedData Cache
-      if: steps.test.outputs.test_failed != 'true'
-      uses: cirruslabs/cache/save@v4
-      with:
-        path: "~/Library/Developer/Xcode/DerivedData"
-        key: ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}
-
-    - name: Fail if tests failed
-      if: steps.test.outputs.test_failed == 'true'
-      shell: bash
-      run: exit 1
-
-    
+          set +e  # Don't exit on error
+          eval ${PRETERNATURAL_CMD} 2>&1
+          TEST_STATUS=$?
+          echo "Test command exited with status: $TEST_STATUS"
+          if [ $TEST_STATUS -ne 0 ]; then
+            echo "::error::Test failed (status: $TEST_STATUS). Failing the workflow after uploading logs."
+            echo "test_failed=true" >> $GITHUB_OUTPUT
+          else
+            echo "test_failed=false" >> $GITHUB_OUTPUT
+          fi
+          exit 0
+      - name: Upload logs
+        if: success() || failure()
+        uses: PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main
+      - name: Save DerivedData Cache
+        if: steps.test.outputs.test_failed != 'true'
+        uses: cirruslabs/cache/save@v4
+        with:
+          path: "~/Library/Developer/Xcode/DerivedData"
+          key: ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}
+      - name: Fail if tests failed
+        if: steps.test.outputs.test_failed == 'true'
+        shell: bash
+        run: exit 1

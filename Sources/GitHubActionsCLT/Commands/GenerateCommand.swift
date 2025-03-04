@@ -4,13 +4,15 @@
 
 import ArgumentParser
 
-struct GenerateCommand: AsyncParsableCommand {
-    static let configuration = CommandConfiguration(
+public struct GenerateCommand: AsyncParsableCommand {
+    public static let configuration = CommandConfiguration(
         commandName: "generate",
         abstract: "Generates YAML file(s) from the configured GitHub Workflows and Actions."
     )
+    
+    public init() {}
 
-    func run() async throws {
-        try await _GHA.Configuration.generateYAML()
+    public func run() async throws {
+        try _GHA.Configuration.generateYAML()
     }
 }
