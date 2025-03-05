@@ -1,0 +1,115 @@
+name: Export macOS App
+description: |-
+  Signs, exports, packages and notarizes a macOS app in .zip or .dmg format using Preternatural CLI.
+inputs:
+  xcode-version:
+    description: 'Xcode version to use'
+    required: false
+    default: '16.2'
+  working-directory:
+    description: 'Directory to run the preternatural command from'
+    required: false
+    default: ''
+  configuration:
+    description: 'Build configuration (either `Debug` or `Release`; Release by default)'
+    required: false
+    default: 'Release'
+  fuck-swift-syntax:
+    description: 'Enable the --fuck-swift-syntax flag'
+    required: false
+    default: true
+    type: boolean
+runs:
+  using: 'composite'
+  steps:
+    - name: Load Secrets from 1Password
+      uses: 1password/load-secrets-action@v2
+      with:
+        export-env: true
+      env:
+        OP_SERVICE_ACCOUNT_TOKEN: "token"
+        NOTARIZATION_APP_STORE_CONNECT_USERNAME: op://abc/abc/abc
+        NOTARIZATION_APP_STORE_CONNECT_PASSWORD: op://abc/abc/abc
+        GITHUB_PAT: op://abc/abc/abc
+        DEVELOPER_ID_APPLICATION_CERTIFICATE_DATA_BASE_64: op://abc/abc/abc
+        DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD: op://abc/abc/abc
+        TEAM_ID: op://abc/abc/abc
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ inputs.xcode_version }}
+    - name: Install Preternatural
+      shell: bash
+      run: |-
+        set -x  # Enable verbose output
+        brew tap PreternaturalAI/preternatural
+        brew install preternatural
+    - name: Setup PAT for Private Repos
+      shell: bash
+      run: |-
+        echo -e "Setup PAT for Private Repos"
+        {
+          git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
+        } > /dev/null 2>&1
+        echo -e "PAT Setup Complete"
+    - name: Restore DerivedData Cache
+      uses: actions/cache/restore@v4
+      with:
+        path: "~/Library/Developer/Xcode/DerivedData"
+        key: ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}
+        restore-keys: |-
+          ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data
+    - name: Build Archive
+      continue-on-error: true
+      id: archive
+      shell: bash
+      run: |-
+        echo -e "Build Archive"
+
+        # Change directory if working-directory is provided
+        if [ ! -z "${{ inputs.working-directory }}" ]; then
+          cd "${{ inputs.working-directory }}"
+          echo "Changed working directory to: ${{ inputs.working-directory }}"
+        fi
+
+        # Build command with optional debug flag
+        CMD="script -q /dev/null preternatural archive --team-id $TEAM_ID"
+
+        if [ -n "${{ inputs.configuration }}" ]; then
+          CMD="$CMD --configuration "${{ inputs.configuration }}""
+        fi
+
+        if [ "${{ inputs.fuck-swift-syntax }}" == "true" ]; then
+          CMD="$CMD --fuck-swift-syntax"
+        fi
+
+        # Execute the command
+        eval "$CMD" 2>&1
+
+        if [ $? -eq 0 ]; then
+          echo "archive_succeeded=true" >> $GITHUB_OUTPUT
+        fi
+
+        set +x  # Disable command echo
+        echo -e "Archive Step completed"
+    - name: Upload Notarized App as artifact
+      if: steps.archive.outputs.archive_succeeded == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: Notarized-App
+        path: '**/*Notarized.zip'
+        if-no-files-found: error
+    - name: Upload logs
+      uses: PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main
+    - name: Save DerivedData Cache
+      if: steps.archive.outputs.archive_succeeded == 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: "~/Library/Developer/Xcode/DerivedData"
+        key: ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}
+    - name: Check archive status and fail if necessary
+      if: steps.archive.outputs.archive_succeeded != 'true'
+      shell: bash
+      run: |-
+        echo "Archive failed earlier in the workflow"
+        exit 1

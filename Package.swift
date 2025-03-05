@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 5.10
 
 import PackageDescription
 
@@ -7,18 +7,21 @@ let package = Package(
     platforms: [
         .macOS(.v14)
     ],
+    products: [
+        .library(
+            name: "swift-github-actions",
+            targets: [
+                "GitHubActionsCLT"
+            ]
+        )
+    ],
     dependencies: [
         .package(url: "https://github.com/vmanot/CorePersistence.git", branch: "main"),
         .package(url: "https://github.com/vmanot/Merge.git", branch: "master"),
+        .package(url: "https://github.com/preternatural-fork/Yams", branch: "main"),
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
     ],
     targets: [
-        .executableTarget(
-            name: "swift-github-actions",
-            dependencies: [
-                "CorePersistence",
-                "Merge"
-            ]
-        ),
         .target(
             name: "CLT_act",
             dependencies: [
@@ -27,10 +30,18 @@ let package = Package(
             ]
         ),
         .target(
-            name: "_GitHubActionsTypes"
+            name: "_GitHubActionsTypes",
+            dependencies: [
+                "Merge"
+            ]
         ),
         .target(
-            name: "GitHubActionsCore"
+            name: "GitHubActionsCore",
+            dependencies: [
+                "_GitHubActionsTypes",
+                "Yams",
+                "Merge"
+            ]
         ),
         .target(
             name: "GitHubActionsDescription",
@@ -42,8 +53,9 @@ let package = Package(
         .target(
             name: "GitHubActionsRunner",
             dependencies: [
+                "CLT_act",
                 "_GitHubActionsTypes",
-                "GitHubActionsCore"
+                "GitHubActionsCore",
             ]
         ),
         .target(
@@ -51,7 +63,18 @@ let package = Package(
             dependencies: [
                 "_GitHubActionsTypes",
                 "GitHubActionsCore",
-                "GitHubActionsRunner"
+                "GitHubActionsRunner",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]
+        ),
+        .testTarget(
+            name: "GitHubActionsTests",
+            dependencies: [
+                "GitHubActionsCLT",
+            ],
+            path: "Tests",
+            resources: [
+                .copy("Resources")
             ]
         )
     ]

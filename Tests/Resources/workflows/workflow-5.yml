@@ -1,0 +1,22 @@
+name: Preternatural Archive & Notarize
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  archive-and-notarize:
+    runs-on: ghcr.io/cirruslabs/macos-runner:sequoia
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Run Internal Preternatural Export
+        uses: PreternaturalAI/internal-github-action/preternatural-export@main
+        with:
+          working-directory: 'BrowserExtensionContainer'
