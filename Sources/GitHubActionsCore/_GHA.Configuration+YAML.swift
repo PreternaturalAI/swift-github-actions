@@ -47,6 +47,7 @@ extension _GHA.Configuration {
             finalOutputURL = outputURL.appendingPathComponent("workflow.yml")
         }
         try yaml.write(to: finalOutputURL, atomically: true, encoding: .utf8)
+        print("Generated GitHub Workflow file at:\n\(finalOutputURL.path(percentEncoded: false))\n")
     }
     
     private static func generateActionYAML(_ action: _GHA.Action, at outputURL: URL) throws {
@@ -61,5 +62,6 @@ extension _GHA.Configuration {
             finalOutputURL = outputURL.appendingPathComponent("action.yml")
         }
         try yaml.write(to: finalOutputURL, atomically: true, encoding: .utf8)
+        print("Generated GitHub Action file at:\n\(finalOutputURL.path(percentEncoded: false))\n")
     }
 }

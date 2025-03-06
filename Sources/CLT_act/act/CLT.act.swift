@@ -17,18 +17,20 @@ extension CommandLineTools {
 extension CommandLineTools.act {
     
     @discardableResult
-    public func run(workflowURL: URL, sudoPassword: String, gitHubToken: String) async throws -> Process.RunResult {
+    public func run(workflowURL: URL, gitHubToken: String) async throws -> Process.RunResult {
         return try await withUnsafeSystemShell { shell in
-            let command = "echo \"\(sudoPassword)\" | sudo -S act "
+            let command = "act"
             let arguments = [
                 "-P",
                 "macos-latest=-self-hosted",
+                "--container-architecture",
+                "linux/amd64",
                 "-W",
                 workflowURL.path(percentEncoded: false),
                 "-s",
-                "GITHUB_TOKEN=\"\(gitHubToken)\""
+                "GITHUB_TOKEN=\(gitHubToken)"
             ]
-            let finalCommand = command + arguments.joined(separator: " ")
+            let finalCommand = (command + arguments).joined(separator: " ")
             return try await shell.run(command: finalCommand)
         }
     }
