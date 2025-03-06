@@ -44,8 +44,10 @@ public final class WorkflowLocalRunner {
             if let storedToken = try keychain.get(githubTokenKey) {
                 githubToken = storedToken
             } else {
-                print("GITHUB_TOKEN is required to run act locally. If you are already logged in to the `gh` command, run `gh auth token` to get your current personal access token.")
-                print("Please enter your GitHub token:")
+                print("\nGITHUB_TOKEN is required to run act locally.")
+                print("If you are already logged in to the `gh` command, run `gh auth token` to get your current personal access token.")
+                print("You can directly enter $(gh auth token) in the prompt below to automatically fetch the personal access token.")
+                print("\nPlease enter your GitHub personal access token:")
                 guard let token = readLine() else { throw WorkflowLocalRunnerError.invalidOrEmptyGitHubToken }
                 try keychain.set(token, key: githubTokenKey)
                 githubToken = token
@@ -54,12 +56,7 @@ public final class WorkflowLocalRunner {
             print(error)
         }
         
-        // 3. Get sudo password securely
-        print("Sudo access is required to run the workflow.")
-        print("Please enter your sudo password:")
-        let password = String(cString: getpass(""))
-        
-        // 4. Create local copy with modified runner
+        // 3. Create local copy with modified runner
         let localWorkflowURL = url.deletingLastPathComponent()
             .appendingPathComponent(url.deletingPathExtension().lastPathComponent + "-local.yml")
         
@@ -75,11 +72,11 @@ public final class WorkflowLocalRunner {
             try? FileManager.default.removeItem(at: localWorkflowURL)
         }
         
-        // 5. Run with act
+        // 4. Run with act
         let act = CLT.act()
         act.currentDirectoryURL = try findNearestParentGitRepoURL(for: localWorkflowURL)
         print("Running command in directory: \(act.currentDirectoryURL?.path(percentEncoded: false) ?? "-")")
-        return try await act.run(workflowURL: localWorkflowURL, sudoPassword: password, gitHubToken: githubToken)
+        return try await act.run(workflowURL: localWorkflowURL, gitHubToken: githubToken)
     }
     
     private static func findNearestParentGitRepoURL(for url: URL) throws -> URL {
