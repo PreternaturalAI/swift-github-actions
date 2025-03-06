@@ -3,21 +3,23 @@
 //
 
 import ArgumentParser
-import Foundation
+import GitHubActionsRunner
 import GitHubActionsCore
-import CLT_act
-import CommandLineToolSupport
+import Foundation
 
 enum RunLocallyError: LocalizedError {
     case noWorkflowsConfigured
-    case workflowFileNotFound(URL)
+    case invalidWorkflowSelection
+    case error(String)
     
     var errorDescription: String? {
         switch self {
         case .noWorkflowsConfigured:
             return "No workflows are configured. Please configure workflows first."
-        case .workflowFileNotFound(let url):
-            return "Workflow file not found at path: \(url.path)"
+        case .invalidWorkflowSelection:
+            return "Invalid workflow selection."
+        case .error(let description):
+            return description
         }
     }
 }
@@ -58,42 +60,18 @@ public struct RunLocallyCommand: AsyncParsableCommand {
             guard let input = readLine(),
                   let selection = Int(input),
                   selection > 0 && selection <= workflows.count else {
-                RunLocallyCommand.exit(withError: ValidationError("Invalid selection. Exiting."))
+                RunLocallyCommand.exit(withError: RunLocallyError.invalidWorkflowSelection)
             }
             
             selectedWorkflow = workflows[selection - 1]
         }
         
-        // 3. Check if file exists
-        guard FileManager.default.fileExists(atPath: selectedWorkflow.url.path) else {
-            RunLocallyCommand.exit(withError: RunLocallyError.workflowFileNotFound(selectedWorkflow.url))
+        // 3. Run the selected workflow
+        let result = try await WorkflowLocalRunner.runWorkflow(at: selectedWorkflow.url)
+        if let description = result.stderrString {
+            RunLocallyCommand.exit(withError: RunLocallyError.error(description))
         }
         
-        // 4. Create local copy with modified runner
-        let localWorkflowURL = selectedWorkflow.url.deletingLastPathComponent()
-            .appendingPathComponent(selectedWorkflow.url.deletingPathExtension().lastPathComponent + "-local.yml")
-        
-        let originalContent = try String(contentsOf: selectedWorkflow.url, encoding: .utf8)
-        let modifiedContent = originalContent.replacingOccurrences(
-            of: "ghcr.io/cirruslabs/macos-runner[^\\n]*",
-            with: "macos-latest",
-            options: .regularExpression
-        )
-        
-        try modifiedContent.write(to: localWorkflowURL, atomically: true, encoding: .utf8)
-        defer {
-            try? FileManager.default.removeItem(at: localWorkflowURL)
-        }
-        
-        // 5. Get sudo password securely
-        print("Sudo access is required to run the workflow.")
-        print("Please enter your sudo password:")
-        let password = String(cString: getpass(""))
-        
-        // 6. Run with act
-        let act = CLT.act()
-        act.currentDirectoryURL = localWorkflowURL.deletingLastPathComponent().deletingLastPathComponent()
-        let result = try await act.run(workflowURL: localWorkflowURL, sudoPassword: password)
-        print("Result: \(result)")
+        RunLocallyCommand.exit()
     }
 }
