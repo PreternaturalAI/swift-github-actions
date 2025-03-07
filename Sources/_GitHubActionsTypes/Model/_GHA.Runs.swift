@@ -6,14 +6,14 @@ import Foundation
 
 public extension _GHA.Action {
     struct Runs: Equatable {
-        public let using: _GHA.YAMLString
+        public let using: _GHA.FormattedValue
         public let steps: [_GHA.Step]?
         public let main: String?
         public let pre: String?
         public let post: String?
 
         public init(
-            using: _GHA.YAMLString,
+            using: _GHA.FormattedValue,
             steps: [_GHA.Step]? = nil,
             main: String? = nil,
             pre: String? = nil,
@@ -27,5 +27,3 @@ public extension _GHA.Action {
         }
     }
 }
-
-extension _GHA.Action.Runs: Encodable {}

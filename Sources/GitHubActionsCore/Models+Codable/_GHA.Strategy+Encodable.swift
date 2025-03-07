@@ -5,16 +5,6 @@
 import Foundation
 import OrderedCollections
 
-public extension _GHA.Job {
-    struct Strategy: Equatable {
-        public let matrix: OrderedDictionary<String, [_GHA.YAMLString]>?
-
-        public init(matrix: OrderedDictionary<String, [_GHA.YAMLString]>? = nil) {
-            self.matrix = matrix
-        }
-    }
-}
-
 extension _GHA.Job.Strategy: Encodable {
     private enum CodingKeys: String, CodingKey {
         case matrix

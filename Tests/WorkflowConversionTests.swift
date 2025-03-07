@@ -17,10 +17,10 @@ struct WorkflowConversionTests {
     @Test("Test Workflow 1 Conversion")
     func testWorkflow1Conversion() throws {
         let workflow = _GHA.Workflow(
-            name: "build-swallow".toYamlString,
+            name: "build-swallow",
             on: _GHA.Triggers(
                 push: _GHA.Triggers.PushTrigger(
-                    branches: ["build-swallow".toYamlString]
+                    branches: ["build-swallow"]
                 ),
                 workflowDispatch: true
             ),
@@ -28,54 +28,54 @@ struct WorkflowConversionTests {
                 "build-swallow": _GHA.Job(
                     strategy: _GHA.Job.Strategy(matrix: [
                         "xcode_version": [
-                            "15.4".toYamlString(.doubleQuoted),
-                            "16.1_beta".toYamlString(.doubleQuoted),
+                            .doubleQuoted("15.4"),
+                            .doubleQuoted("16.1_beta"),
                         ]
                     ]),
                     env: [
-                        "DEVELOPER_DIR": "/Applications/Xcode_${{ matrix.xcode_version }}.app/Contents/Developer".toYamlString(.doubleQuoted)
+                        "DEVELOPER_DIR": .doubleQuoted("/Applications/Xcode_${{ matrix.xcode_version }}.app/Contents/Developer")
                     ],
-                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia".toYamlString,
+                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia",
                     steps: [
                         _GHA.Step(
-                            name: "Xcode Select ${{ matrix.xcode_version }}".toYamlString,
-                            run: "sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode_version }}.app".toYamlString
+                            name: "Xcode Select ${{ matrix.xcode_version }}",
+                            run: "sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode_version }}.app"
                         ),
                         _GHA.Step(
-                            name: "Get swift version".toYamlString,
-                            run: "swift --version".toYamlString
+                            name: "Get swift version",
+                            run: "swift --version"
                         ),
                         _GHA.Step(
-                            uses: "actions/checkout@v2".toYamlString
+                            uses: "actions/checkout@v2"
                         ),
                         _GHA.Step(
-                            name: "Clone Swallow".toYamlString,
+                            name: "Clone Swallow",
                             env: [
-                                "COMMIT": "2ac7c7f06110bc3b397677e82d3a232980c20617".toYamlString
+                                "COMMIT": "2ac7c7f06110bc3b397677e82d3a232980c20617"
                             ],
-                            run: """
+                            run: .multiline("""
                             git clone https://github.com/vmanot/Swallow
                             cd Swallow
                             git checkout $COMMIT
-                            """.toYamlString(.multiline)
+                            """)
                         ),
                         _GHA.Step(
-                            name: "Build Scipio".toYamlString,
-                            run: """
+                            name: "Build Scipio",
+                            run: .multiline("""
                             swift build -c release
-                            """.toYamlString(.multiline)
+                            """)
                         ),
                         _GHA.Step(
-                            name: "Build XCFrameworks".toYamlString,
-                            run: """
+                            name: "Build XCFrameworks",
+                            run: .multiline("""
                             swift run -c release scipio prepare Swallow
-                            """.toYamlString(.multiline)
+                            """)
                         ),
                         _GHA.Step(
-                            name: "List XCFrameworks".toYamlString,
-                            run: """
+                            name: "List XCFrameworks",
+                            run: .multiline("""
                             ls -l Swallow/XCFrameworks
-                            """.toYamlString(.multiline)
+                            """)
                         )
                     ]
                 )
@@ -88,29 +88,29 @@ struct WorkflowConversionTests {
     @Test("Test Workflow 2 Conversion")
     func testWorkflow2Conversion() throws {
         let workflow = _GHA.Workflow(
-            name: "Preternatural Archive Test (Test-Project)".toYamlString,
+            name: "Preternatural Archive Test (Test-Project)",
             on: _GHA.Triggers(
                 workflowDispatch: true
             ),
             jobs: [
                 "build": _GHA.Job(
-                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia".toYamlString,
+                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia",
                     steps: [
                         _GHA.Step(
-                            name: "Checkout repository".toYamlString,
-                            uses: "actions/checkout@v3".toYamlString
+                            name: "Checkout repository",
+                            uses: "actions/checkout@v3"
                         ),
                         _GHA.Step(
-                            name: "Install Preternatural".toYamlString,
-                            run: """
+                            name: "Install Preternatural",
+                            run: .multiline("""
                             set -x  # Enable verbose output
                             brew tap PreternaturalAI/preternatural
                             brew install preternatural
-                            """.toYamlString(.multiline)
+                            """)
                         ),
                         _GHA.Step(
-                            name: "Test Preternatural Installation".toYamlString,
-                            run: """
+                            name: "Test Preternatural Installation",
+                            run: .multiline("""
                             echo "Preternatural version:"
                             preternatural help
 
@@ -119,24 +119,24 @@ struct WorkflowConversionTests {
 
                             echo "Brew info:"
                             brew info preternatural
-                            """.toYamlString(.multiline)
+                            """)
                         ),
                         _GHA.Step(
-                            name: "Setup Xcode".toYamlString,
-                            uses: "maxim-lobanov/setup-xcode@v1".toYamlString,
+                            name: "Setup Xcode",
+                            uses: "maxim-lobanov/setup-xcode@v1",
                             with: [
-                                "xcode-version": "${{ inputs.xcode_version }}".toYamlString
+                                "xcode-version": "${{ inputs.xcode_version }}"
                             ]
                         ),
                         _GHA.Step(
-                            name: "Install the Apple certificate and provisioning profile".toYamlString,
-                            shell: "bash".toYamlString,
-                            workingDirectory: "Test-Project".toYamlString(.singleQuoted),
+                            name: "Install the Apple certificate and provisioning profile",
+                            shell: "bash",
+                            workingDirectory: .singleQuoted("Test-Project"),
                             env: [
-                                "BUILD_CERTIFICATE_BASE64": "base".toYamlString(.doubleQuoted),
-                                "P12_PASSWORD": "123".toYamlString(.doubleQuoted)
+                                "BUILD_CERTIFICATE_BASE64": .doubleQuoted("base"),
+                                "P12_PASSWORD": .doubleQuoted("123")
                             ],
-                            run: """
+                            run: .multiline("""
                             # Generate a random keychain password
                             KEYCHAIN_PASSWORD=$(openssl rand -base64 15)
 
@@ -159,17 +159,17 @@ struct WorkflowConversionTests {
                             # Make the custom keychain the default and add it to the keychain list
                             security default-keychain -s $KEYCHAIN_PATH
                             security list-keychains -d user -s $KEYCHAIN_PATH $(security list-keychains -d user | xargs)
-                            """.toYamlString(.multiline)
+                            """)
                         ),
                         _GHA.Step(
-                            name: "Run preternatural archive command".toYamlString,
-                            shell: "bash".toYamlString,
-                            workingDirectory: "Test-Project".toYamlString(.singleQuoted),
+                            name: "Run preternatural archive command",
+                            shell: "bash",
+                            workingDirectory: .singleQuoted("Test-Project"),
                             env: [
-                                "NOTARIZATION_APP_STORE_CONNECT_USERNAME": "username".toYamlString(.doubleQuoted),
-                                "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": "password".toYamlString(.doubleQuoted)
+                                "NOTARIZATION_APP_STORE_CONNECT_USERNAME": .doubleQuoted("username"),
+                                "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": .doubleQuoted("password")
                             ],
-                            run: """
+                            run: .multiline("""
                             TEAM_ID="asdbv"
 
                             if [ -n "${TEAM_ID}" ]; then
@@ -177,12 +177,12 @@ struct WorkflowConversionTests {
                             else
                               script -q /dev/null preternatural archive
                             fi
-                            """.toYamlString(.multiline)
+                            """)
                         ),
                         _GHA.Step(
-                            name: "Find archive file".toYamlString,
-                            shell: "bash".toYamlString,
-                            run: """
+                            name: "Find archive file",
+                            shell: "bash",
+                            run: .multiline("""
                             ARCHIVE_FILE=$(find . -name "*Notarized*.zip" -print -quit)
                             if [ -z "$ARCHIVE_FILE" ]; then
                               echo "Error: No notarized ZIP file found"
@@ -190,15 +190,15 @@ struct WorkflowConversionTests {
                             fi
                             echo "ARCHIVE_FILE=$ARCHIVE_FILE" >> $GITHUB_ENV
                             echo "Found archive file: $ARCHIVE_FILE"
-                            """.toYamlString(.multiline)
+                            """)
                         ),
                         _GHA.Step(
-                            name: "Upload archive as artifact".toYamlString,
-                            uses: "actions/upload-artifact@v4".toYamlString,
+                            name: "Upload archive as artifact",
+                            uses: "actions/upload-artifact@v4",
                             with: [
-                                "name": "notarized-app".toYamlString,
-                                "path": "${{ env.ARCHIVE_FILE }}".toYamlString,
-                                "if-no-files-found": "error".toYamlString
+                                "name": "notarized-app",
+                                "path": "${{ env.ARCHIVE_FILE }}",
+                                "if-no-files-found": "error"
                             ]
                         )
                     ]
@@ -212,28 +212,28 @@ struct WorkflowConversionTests {
     @Test("Test Workflow 3 Conversion")
     func testWorkflow3Conversion() throws {
         let workflow = _GHA.Workflow(
-            name: "Preternatural Internal Release Plugin GitHub Action".toYamlString,
+            name: "Preternatural Internal Release Plugin GitHub Action",
             on: _GHA.Triggers(
                 workflowDispatch: true
             ),
             jobs: [
                 "build": _GHA.Job(
-                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia".toYamlString,
+                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia",
                     steps: [
                         _GHA.Step(
-                            name: "Run Update Plugin Action (preternatural)".toYamlString,
-                            uses: "PreternaturalAI/internal-github-action/preternatural-release-plugin@aksh1t/ENG-1792".toYamlString,
+                            name: "Run Update Plugin Action (preternatural)",
+                            uses: "PreternaturalAI/internal-github-action/preternatural-release-plugin@aksh1t/ENG-1792",
                             with: [
-                                "plugin-package-repository": "PreternaturalAI/command-line-tool-plugin".toYamlString(.singleQuoted),
-                                "tool-name": "preternatural".toYamlString(.singleQuoted)
+                                "plugin-package-repository": .singleQuoted("PreternaturalAI/command-line-tool-plugin"),
+                                "tool-name": .singleQuoted("preternatural")
                             ]
                         ),
                         _GHA.Step(
-                            name: "Run Update Plugin Action (lint-my-swift)".toYamlString,
-                            uses: "PreternaturalAI/internal-github-action/preternatural-release-plugin@aksh1t/ENG-1792".toYamlString,
+                            name: "Run Update Plugin Action (lint-my-swift)",
+                            uses: "PreternaturalAI/internal-github-action/preternatural-release-plugin@aksh1t/ENG-1792",
                             with: [
-                                "plugin-package-repository": "PreternaturalAI/lint-my-swift-plugin".toYamlString(.singleQuoted),
-                                "tool-name": "lint-my-swift".toYamlString(.singleQuoted)
+                                "plugin-package-repository": .singleQuoted("PreternaturalAI/lint-my-swift-plugin"),
+                                "tool-name": .singleQuoted("lint-my-swift")
                             ]
                         )
                     ]
@@ -247,61 +247,61 @@ struct WorkflowConversionTests {
     @Test("Test Workflow 4 Conversion")
     func testWorkflow4Conversion() throws {
         let workflow = _GHA.Workflow(
-            name: "Build and Test".toYamlString,
+            name: "Build and Test",
             on: _GHA.Triggers(
                 push: _GHA.Triggers.PushTrigger(
-                    branches: ["main".toYamlString]
+                    branches: ["main"]
                 ),
                 pullRequest: _GHA.Triggers.PullRequestTrigger(
-                    branches: ["*".toYamlString]
+                    branches: ["*"]
                 )
             ),
             jobs: [
                 "Tests": _GHA.Job(
-                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia".toYamlString,
+                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia",
                     steps: [
                         _GHA.Step(
-                            name: "Setup Xcode".toYamlString,
-                            uses: "maxim-lobanov/setup-xcode@v1".toYamlString,
+                            name: "Setup Xcode",
+                            uses: "maxim-lobanov/setup-xcode@v1",
                             with: [
-                                "xcode-version": "16.2".toYamlString(.singleQuoted)
+                                "xcode-version": .singleQuoted("16.2")
                             ]
                         ),
                         _GHA.Step(
-                            name: "Authorize Preternatural GitHub".toYamlString,
-                            uses: "PreternaturalAI/internal-github-action/preternatural-authorize-github@main".toYamlString
+                            name: "Authorize Preternatural GitHub",
+                            uses: "PreternaturalAI/internal-github-action/preternatural-authorize-github@main"
                         ),
                         _GHA.Step(
-                            name: "Get swift version".toYamlString,
-                            run: "swift --version".toYamlString
+                            name: "Get swift version",
+                            run: "swift --version"
                         ),
                         _GHA.Step(
-                            uses: "actions/checkout@v4".toYamlString
+                            uses: "actions/checkout@v4"
                         ),
                         _GHA.Step(
-                            name: "Install Preternatural".toYamlString,
-                            shell: "bash".toYamlString,
-                            run: """
+                            name: "Install Preternatural",
+                            shell: "bash",
+                            run: .multiline("""
                             brew tap PreternaturalAI/preternatural
                             brew install preternatural
-                            """.toYamlString(.multiline)
+                            """)
                         ),
                         _GHA.Step(
-                            name: "Restore DerivedData Cache".toYamlString,
-                            uses: "cirruslabs/cache/restore@v4".toYamlString,
+                            name: "Restore DerivedData Cache",
+                            uses: "cirruslabs/cache/restore@v4",
                             with: [
-                                "path": "~/Library/Developer/Xcode/DerivedData".toYamlString(.doubleQuoted),
-                                "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}".toYamlString,
-                                "restore-keys": """
+                                "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
+                                "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}",
+                                "restore-keys": .multiline("""
                                 ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data
-                                """.toYamlString(.multiline)
+                                """)
                             ]
                         ),
                         _GHA.Step(
-                            name: "Run Preternatural Test Command".toYamlString,
-                            id: "test".toYamlString,
-                            shell: "bash".toYamlString,
-                            run: """
+                            name: "Run Preternatural Test Command",
+                            id: "test",
+                            shell: "bash",
+                            run: .multiline("""
                             PRETERNATURAL_CMD="script -q /dev/null preternatural test --build-before-testing --suppress-warnings"
 
                             set +e  # Don't exit on error
@@ -315,27 +315,27 @@ struct WorkflowConversionTests {
                               echo "test_failed=false" >> $GITHUB_OUTPUT
                             fi
                             exit 0
-                            """.toYamlString(.multiline)
+                            """)
                         ),
                         _GHA.Step(
-                            name: "Upload logs".toYamlString,
-                            if: "success() || failure()".toYamlString,
-                            uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main".toYamlString
+                            name: "Upload logs",
+                            if: "success() || failure()",
+                            uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main"
                         ),
                         _GHA.Step(
-                            name: "Save DerivedData Cache".toYamlString,
-                            if: "steps.test.outputs.test_failed != 'true'".toYamlString,
-                            uses: "cirruslabs/cache/save@v4".toYamlString,
+                            name: "Save DerivedData Cache",
+                            if: "steps.test.outputs.test_failed != 'true'",
+                            uses: "cirruslabs/cache/save@v4",
                             with: [
-                                "path": "~/Library/Developer/Xcode/DerivedData".toYamlString(.doubleQuoted),
-                                "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}".toYamlString
+                                "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
+                                "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}"
                             ]
                         ),
                         _GHA.Step(
-                            name: "Fail if tests failed".toYamlString,
-                            if: "steps.test.outputs.test_failed == 'true'".toYamlString,
-                            shell: "bash".toYamlString,
-                            run: "exit 1".toYamlString
+                            name: "Fail if tests failed",
+                            if: "steps.test.outputs.test_failed == 'true'",
+                            shell: "bash",
+                            run: "exit 1"
                         )
                     ]
                 )
@@ -349,39 +349,39 @@ struct WorkflowConversionTests {
     func testWorkflow5Conversion() throws {
         var jobs: OrderedDictionary<String, _GHA.Job> = [:]
         jobs["archive-and-notarize"] = _GHA.Job(
-            runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia".toYamlString,
+            runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia",
             steps: [
                 _GHA.Step(
-                    name: "Checkout repository".toYamlString,
-                    uses: "actions/checkout@v4".toYamlString
+                    name: "Checkout repository",
+                    uses: "actions/checkout@v4"
                 ),
                 _GHA.Step(
-                    uses: "oven-sh/setup-bun@v2".toYamlString,
+                    uses: "oven-sh/setup-bun@v2",
                     with: [
-                        "bun-version": "latest".toYamlString
+                        "bun-version": "latest"
                     ]
                 ),
                 _GHA.Step(
-                    name: "Run Internal Preternatural Export".toYamlString,
-                    uses: "PreternaturalAI/internal-github-action/preternatural-export@main".toYamlString,
+                    name: "Run Internal Preternatural Export",
+                    uses: "PreternaturalAI/internal-github-action/preternatural-export@main",
                     with: [
-                        "working-directory": "BrowserExtensionContainer".toYamlString(.singleQuoted)
+                        "working-directory": .singleQuoted("BrowserExtensionContainer")
                     ]
                 )
             ]
         )
         
         let workflow = _GHA.Workflow(
-            name: "Preternatural Archive & Notarize".toYamlString,
+            name: "Preternatural Archive & Notarize",
             on: _GHA.Triggers(
                 push: _GHA.Triggers.PushTrigger(
-                    branches: ["main".toYamlString]
+                    branches: ["main"]
                 ),
                 workflowDispatch: true
             ),
             concurrency: [
-                "group": "${{ github.workflow }}-${{ github.ref }}".toYamlString,
-                "cancel-in-progress": "true".toYamlString
+                "group": "${{ github.workflow }}-${{ github.ref }}",
+                "cancel-in-progress": true
             ],
             jobs: jobs
         )

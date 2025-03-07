@@ -6,12 +6,10 @@ import Foundation
 
 public extension _GHA.Triggers {
     struct PullRequestTrigger: Equatable {
-        public let branches: [_GHA.YAMLString]?
+        public let branches: [_GHA.FormattedValue]?
 
-        public init(branches: [_GHA.YAMLString]? = nil) {
+        public init(branches: [_GHA.FormattedValue]? = nil) {
             self.branches = branches
         }
     }
 }
-
-extension _GHA.Triggers.PullRequestTrigger: Encodable {}
