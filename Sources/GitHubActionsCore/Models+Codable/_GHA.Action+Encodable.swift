@@ -5,27 +5,6 @@
 import Foundation
 import OrderedCollections
 
-public extension _GHA {
-    struct Action: Equatable {
-        public let name: YAMLString
-        public let description: YAMLString?
-        public let inputs: OrderedDictionary<String, Input>?
-        public let runs: Runs
-        
-        public init(
-            name: YAMLString,
-            description: YAMLString? = nil,
-            inputs: OrderedDictionary<String, Input>? = nil,
-            runs: Runs
-        ) {
-            self.name = name
-            self.description = description
-            self.inputs = inputs
-            self.runs = runs
-        }
-    }
-}
-
 extension _GHA.Action: Encodable {
     private enum CodingKeys: String, CodingKey {
         case name

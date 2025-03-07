@@ -5,45 +5,6 @@
 import Foundation
 import OrderedCollections
 
-public extension _GHA {
-    struct Step: Equatable {
-        public let name: YAMLString?
-        public let `if`: YAMLString?
-        public let continueOnError: Bool?
-        public let id: YAMLString?
-        public let uses: YAMLString?
-        public let shell: YAMLString?
-        public let with: OrderedDictionary<String, YAMLString>?
-        public let workingDirectory: YAMLString?
-        public let env: OrderedDictionary<String, YAMLString>?
-        public let run: YAMLString?
-        
-        public init(
-            name: YAMLString? = nil,
-            if: YAMLString? = nil,
-            continueOnError: Bool? = nil,
-            id: YAMLString? = nil,
-            uses: YAMLString? = nil,
-            shell: YAMLString? = nil,
-            with: OrderedDictionary<String, YAMLString>? = nil,
-            workingDirectory: YAMLString? = nil,
-            env: OrderedDictionary<String, YAMLString>? = nil,
-            run: YAMLString? = nil
-        ) {
-            self.name = name
-            self.if = `if`
-            self.continueOnError = continueOnError
-            self.id = id
-            self.uses = uses
-            self.shell = shell
-            self.with = with
-            self.workingDirectory = workingDirectory
-            self.env = env
-            self.run = run
-        }
-    }
-}
-
 extension _GHA.Step: Encodable {
     private enum CodingKeys: String, CodingKey {
         case name

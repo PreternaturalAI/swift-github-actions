@@ -16,30 +16,30 @@ struct ActionConversionTests {
     @Test("Test Action 1 Conversion")
     func testAction1Conversion() throws {
         let action = _GHA.Action(
-            name: "Authorize GitHub".toYamlString,
-            description: "Authorizes GitHub so that further commands can access all internal Preternatural repositories.\n".toYamlString(.multiline),
+            name: "Authorize GitHub",
+            description: .multiline("Authorizes GitHub so that further commands can access all internal Preternatural repositories.\n"),
             runs: _GHA.Action.Runs(
-                using: "composite".toYamlString(.singleQuoted),
+                using: .singleQuoted("composite"),
                 steps: [
                     _GHA.Step(
-                        name: "Load Secrets from 1Password".toYamlString,
-                        uses: "1password/load-secrets-action@v2".toYamlString,
+                        name: "Load Secrets from 1Password",
+                        uses: "1password/load-secrets-action@v2",
                         with: [
-                            "export-env": "true".toYamlString
+                            "export-env": true
                         ],
                         env: [
-                            "OP_SERVICE_ACCOUNT_TOKEN": "sample_token".toYamlString(.doubleQuoted),
-                            "GITHUB_PAT": "op://abc/abc/credential".toYamlString
+                            "OP_SERVICE_ACCOUNT_TOKEN": .doubleQuoted("sample_token"),
+                            "GITHUB_PAT": "op://abc/abc/credential"
                         ]
                     ),
                     _GHA.Step(
-                        name: "Setup PAT for Private Repos".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Setup PAT for Private Repos",
+                        shell: "bash",
+                        run: .multiline("""
                         {
                           git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
                         } > /dev/null 2>&1
-                        """.toYamlString(.multiline)
+                        """)
                     )
                 ]
             )
@@ -51,28 +51,28 @@ struct ActionConversionTests {
     @Test("Test Action 2 Conversion")
     func testAction2Conversion() throws {
         let action = _GHA.Action(
-            name: "Preternatural Upload Logs Action".toYamlString(.singleQuoted),
-            description: "Processes and uploads logs from the default derived data path".toYamlString(.singleQuoted),
+            name: .singleQuoted("Preternatural Upload Logs Action"),
+            description: .singleQuoted("Processes and uploads logs from the default derived data path"),
             inputs: [
                 "zip-name": _GHA.Action.Input(
-                    description: "Name of the final log zip file (without .zip extension)".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Name of the final log zip file (without .zip extension)"),
                     required: false,
-                    defaultValue: "".toYamlString(.singleQuoted)
+                    defaultValue: .singleQuoted("")
                 )
             ],
             runs: _GHA.Action.Runs(
-                using: "composite".toYamlString(.singleQuoted),
+                using: .singleQuoted("composite"),
                 steps: [
                     _GHA.Step(
-                        name: "Cleanup previous runs".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: "rm -rf ./logs\n".toYamlString(.multiline)
+                        name: "Cleanup previous runs",
+                        shell: "bash",
+                        run: .multiline("rm -rf ./logs\n")
                     ),
                     _GHA.Step(
-                        name: "Find logs".toYamlString,
+                        name: "Find logs",
                         continueOnError: true,
-                        shell: "bash".toYamlString,
-                        run: """
+                        shell: "bash",
+                        run: .multiline("""
                         DERIVED_DATA_PATH="$HOME/Library/Developer/Xcode/DerivedData"
                         echo "Searching for logs in: $DERIVED_DATA_PATH"
                         
@@ -111,15 +111,15 @@ struct ActionConversionTests {
                         find "$DERIVED_DATA_PATH" -type d -name "Logs" -exec rm -rf {} +
                         find "$DERIVED_DATA_PATH" -type d -name "ResultBundle" -exec rm -rf {} +
                         echo "Cleanup completed"
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Upload logs".toYamlString,
+                        name: "Upload logs",
                         continueOnError: true,
-                        uses: "actions/upload-artifact@v4".toYamlString,
+                        uses: "actions/upload-artifact@v4",
                         with: [
-                            "name": "${{ env.ARTIFACT_NAME }}".toYamlString,
-                            "path": "${{ env.ZIP_PATH }}".toYamlString
+                            "name": "${{ env.ARTIFACT_NAME }}",
+                            "path": "${{ env.ZIP_PATH }}"
                         ]
                     )
                 ]
@@ -132,93 +132,89 @@ struct ActionConversionTests {
     @Test("Test Action 3 Conversion")
     func testAction3Conversion() throws {
         let action = _GHA.Action(
-            name: "Preternatural Build Action".toYamlString(.singleQuoted),
-            description: "Run Preternatural build command on repositories with a specified Xcode version".toYamlString(.singleQuoted),
+            name: .singleQuoted("Preternatural Build Action"),
+            description: .singleQuoted("Run Preternatural build command on repositories with a specified Xcode version"),
             inputs: [
                 "xcode-version": _GHA.Action.Input(
-                    description: "Xcode version to use".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Xcode version to use"),
                     required: false,
-                    defaultValue: "latest-stable".toYamlString(.singleQuoted)
+                    defaultValue: .singleQuoted("latest-stable")
                 ),
                 "platforms": _GHA.Action.Input(
-                    description: "Target platforms (array of: iOS, macOS, tvOS, watchOS, visionOS, all)".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Target platforms (array of: iOS, macOS, tvOS, watchOS, visionOS, all)"),
                     required: false,
-                    defaultValue: """
-                    ["macOS"]
-                    """.toYamlString(.singleQuoted)
+                    defaultValue: .singleQuoted("[\"macOS\"]")
                 ),
                 "configurations": _GHA.Action.Input(
-                    description: "Build configurations (array of: debug, release)".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Build configurations (array of: debug, release)"),
                     required: false,
-                    defaultValue: """
-                    ["debug"]
-                    """.toYamlString(.singleQuoted)
+                    defaultValue: .singleQuoted("[\"debug\"]")
                 ),
                 "working-directory": _GHA.Action.Input(
-                    description: "Directory to run the preternatural command from".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Directory to run the preternatural command from"),
                     required: false,
-                    defaultValue: "".toYamlString(.singleQuoted)
+                    defaultValue: .singleQuoted("")
                 ),
                 "fuck-swift-syntax": _GHA.Action.Input(
-                    description: "Enable the --fuck-swift-syntax flag for the build command".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Enable the --fuck-swift-syntax flag for the build command"),
                     required: false,
-                    defaultValue: "true".toYamlString,
-                    type: .boolean
+                    defaultValue: true,
+                    type: "boolean"
                 )
             ],
             runs: _GHA.Action.Runs(
-                using: "composite".toYamlString(.singleQuoted),
+                using: .singleQuoted("composite"),
                 steps: [
                     _GHA.Step(
-                        name: "Setup Xcode".toYamlString,
-                        uses: "maxim-lobanov/setup-xcode@v1".toYamlString,
+                        name: "Setup Xcode",
+                        uses: "maxim-lobanov/setup-xcode@v1",
                         with: [
-                            "xcode-version": "${{ inputs.xcode-version }}".toYamlString
+                            "xcode-version": "${{ inputs.xcode-version }}"
                         ]
                     ),
                     _GHA.Step(
-                        name: "Check macOS Version".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: "sw_vers".toYamlString
+                        name: "Check macOS Version",
+                        shell: "bash",
+                        run: "sw_vers"
                     ),
                     _GHA.Step(
-                        name: "Check Xcode Version".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: "xcodebuild -version".toYamlString
+                        name: "Check Xcode Version",
+                        shell: "bash",
+                        run: "xcodebuild -version"
                     ),
                     _GHA.Step(
-                        name: "Check Available SDKs".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: "xcodebuild -showsdks".toYamlString
+                        name: "Check Available SDKs",
+                        shell: "bash",
+                        run: "xcodebuild -showsdks"
                     ),
                     _GHA.Step(
-                        name: "Install Preternatural".toYamlString,
-                        if: "${{ !env.ACT }}".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Install Preternatural",
+                        if: "${{ !env.ACT }}",
+                        shell: "bash",
+                        run: .multiline("""
                         echo "::group::Installing Preternatural via Homebrew"
                         brew tap PreternaturalAI/preternatural
                         brew install preternatural
                         echo "::endgroup::"
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Restore DerivedData Cache".toYamlString,
-                        uses: "cirruslabs/cache/restore@v4".toYamlString,
+                        name: "Restore DerivedData Cache",
+                        uses: "cirruslabs/cache/restore@v4",
                         with: [
-                            "path": "~/Library/Developer/Xcode/DerivedData".toYamlString(.doubleQuoted),
-                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}".toYamlString,
-                            "restore-keys": """
+                            "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
+                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}",
+                            "restore-keys": .multiline("""
                             ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data
-                            """.toYamlString(.multiline)
+                            """)
                         ]
                     ),
                     _GHA.Step(
-                        name: "Execute preternatural build command".toYamlString,
+                        name: "Execute preternatural build command",
                         continueOnError: true,
-                        id: "build".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        id: "build",
+                        shell: "bash",
+                        run: .multiline("""
                         echo "::group::Preparing Build Command"
                         PLATFORMS=$(echo '${{ inputs.platforms }}' | tr -d '[]' | sed 's/, /,/g')
                         CONFIGURATIONS=$(echo '${{ inputs.configurations }}' | tr -d '[]' | sed 's/, /,/g')
@@ -266,29 +262,29 @@ struct ActionConversionTests {
                         fi
 
                         echo "build_succeeded=true" >> $GITHUB_OUTPUT
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Upload logs".toYamlString,
-                        uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main".toYamlString
+                        name: "Upload logs",
+                        uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main"
                     ),
                     _GHA.Step(
-                        name: "Save DerivedData Cache".toYamlString,
-                        if: "steps.build.outputs.build_succeeded == 'true'".toYamlString,
-                        uses: "cirruslabs/cache/save@v4".toYamlString,
+                        name: "Save DerivedData Cache",
+                        if: "steps.build.outputs.build_succeeded == 'true'",
+                        uses: "cirruslabs/cache/save@v4",
                         with: [
-                            "path": "~/Library/Developer/Xcode/DerivedData".toYamlString(.doubleQuoted),
-                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}".toYamlString
+                            "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
+                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}"
                         ]
                     ),
                     _GHA.Step(
-                        name: "Check build status and fail if necessary".toYamlString,
-                        if: "steps.build.outputs.build_succeeded != 'true'".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Check build status and fail if necessary",
+                        if: "steps.build.outputs.build_succeeded != 'true'",
+                        shell: "bash",
+                        run: .multiline("""
                         echo "::error::Build failed earlier in the workflow"
                         exit 1
-                        """.toYamlString(.multiline)
+                        """)
                     )
                 ]
             )
@@ -300,52 +296,52 @@ struct ActionConversionTests {
     @Test("Test Action 4 Conversion")
     func testAction4Conversion() throws {
         let action = _GHA.Action(
-            name: "Preternatural Release Plugin".toYamlString,
-            description: """
+            name: "Preternatural Release Plugin",
+            description: .multiline("""
             Updates the url and SHA of the binary target in the given Plugin Package repository
-            """.toYamlString(.multiline),
+            """),
             inputs: [
                 "homebrew-repository": _GHA.Action.Input(
-                    description: "Homebrew Repository from which to lookup the command line tools".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Homebrew Repository from which to lookup the command line tools"),
                     required: false,
-                    defaultValue: "PreternaturalAI/homebrew-preternatural".toYamlString(.singleQuoted)
+                    defaultValue: .singleQuoted("PreternaturalAI/homebrew-preternatural")
                 ),
                 "plugin-package-repository": _GHA.Action.Input(
-                    description: "Plugin Package Repository to update".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Plugin Package Repository to update"),
                     required: true
                 ),
                 "tool-name": _GHA.Action.Input(
-                    description: "Name of the command line tool".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Name of the command line tool"),
                     required: true
                 )
             ],
             runs: _GHA.Action.Runs(
-                using: "composite".toYamlString(.singleQuoted),
+                using: .singleQuoted("composite"),
                 steps: [
                     _GHA.Step(
-                        name: "Load Secrets From 1Password and Export Environment Variables".toYamlString,
-                        uses: "1password/load-secrets-action@v2".toYamlString,
+                        name: "Load Secrets From 1Password and Export Environment Variables",
+                        uses: "1password/load-secrets-action@v2",
                         with: [
-                            "export-env": "true".toYamlString
+                            "export-env": true
                         ],
                         env: [
-                            "OP_SERVICE_ACCOUNT_TOKEN": "token".toYamlString(.doubleQuoted),
-                            "GITHUB_PAT": "op://abc/abc/abc".toYamlString
+                            "OP_SERVICE_ACCOUNT_TOKEN": .doubleQuoted("token"),
+                            "GITHUB_PAT": "op://abc/abc/abc"
                         ]
                     ),
                     _GHA.Step(
-                        name: "Setup PAT for Private Repos".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Setup PAT for Private Repos",
+                        shell: "bash",
+                        run: .multiline("""
                         {
                           git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
                         } > /dev/null 2>&1
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Fetch URL and SHA".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Fetch URL and SHA",
+                        shell: "bash",
+                        run: .multiline("""
                         # Clone homebrew repository
                         git clone https://github.com/${{ inputs.homebrew-repository }}.git homebrew-repo
                         
@@ -375,12 +371,12 @@ struct ActionConversionTests {
                         # Cleanup: Remove the homebrew repository
                         rm -rf homebrew-repo
                         echo "Cleaned up homebrew repository"
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Update Package.swift".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Update Package.swift",
+                        shell: "bash",
+                        run: .multiline("""
                         # Clone plugin package repository
                         git clone https://github.com/${{ inputs.plugin-package-repository }}.git plugin-repo
                         cd plugin-repo
@@ -444,7 +440,7 @@ struct ActionConversionTests {
                         cd ..
                         rm -rf plugin-repo
                         echo "Cleaned up plugin repository"
-                        """.toYamlString(.multiline)
+                        """)
                     )
                 ]
             )
@@ -456,69 +452,69 @@ struct ActionConversionTests {
     @Test("Test Action 5 Conversion")
     func testAction5Conversion() throws {
         let action = _GHA.Action(
-            name: "Preternatural Archive & Notarize Action".toYamlString(.singleQuoted),
-            description: "Archive & notarize a MacOS application using Preternatural CLI".toYamlString(.singleQuoted),
+            name: .singleQuoted("Preternatural Archive & Notarize Action"),
+            description: .singleQuoted("Archive & notarize a MacOS application using Preternatural CLI"),
             inputs: [
                 "xcode-version": _GHA.Action.Input(
-                    description: "Xcode version to use".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Xcode version to use"),
                     required: true,
-                    defaultValue: "latest-stable".toYamlString(.singleQuoted)
+                    defaultValue: .singleQuoted("latest-stable")
                 ),
                 "notarization_username": _GHA.Action.Input(
-                    description: "App Store Connect Username for notarization".toYamlString(.singleQuoted),
+                    description: .singleQuoted("App Store Connect Username for notarization"),
                     required: true
                 ),
                 "notarization_password": _GHA.Action.Input(
-                    description: "App Store Connect Password for notarization".toYamlString(.singleQuoted),
+                    description: .singleQuoted("App Store Connect Password for notarization"),
                     required: true
                 ),
                 "notarization_team_id": _GHA.Action.Input(
-                    description: "App Store Connect Team ID for notarization".toYamlString(.singleQuoted),
+                    description: .singleQuoted("App Store Connect Team ID for notarization"),
                     required: false
                 ),
                 "build_certificate_base64": _GHA.Action.Input(
-                    description: "Base64-encoded Apple certificate".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Base64-encoded Apple certificate"),
                     required: true
                 ),
                 "p12_password": _GHA.Action.Input(
-                    description: "Password for the P12 certificate".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Password for the P12 certificate"),
                     required: true
                 ),
                 "fuck-swift-syntax": _GHA.Action.Input(
-                    description: "Enable the --fuck-swift-syntax flag for the archive command".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Enable the --fuck-swift-syntax flag for the archive command"),
                     required: false,
-                    defaultValue: "true".toYamlString,
-                    type: .boolean
+                    defaultValue: true,
+                    type: "boolean"
                 )
             ],
             runs: _GHA.Action.Runs(
-                using: "composite".toYamlString(.singleQuoted),
+                using: .singleQuoted("composite"),
                 steps: [
                     _GHA.Step(
-                        name: "Setup Xcode".toYamlString,
-                        uses: "maxim-lobanov/setup-xcode@v1".toYamlString,
+                        name: "Setup Xcode",
+                        uses: "maxim-lobanov/setup-xcode@v1",
                         with: [
-                            "xcode-version": "${{ inputs.xcode-version }}".toYamlString
+                            "xcode-version": "${{ inputs.xcode-version }}"
                         ]
                     ),
                     _GHA.Step(
-                        name: "Install Preternatural".toYamlString,
-                        if: "${{ !env.ACT }}".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Install Preternatural",
+                        if: "${{ !env.ACT }}",
+                        shell: "bash",
+                        run: .multiline("""
                         brew tap PreternaturalAI/preternatural
                         brew install preternatural
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Install the Apple certificate and provisioning profile".toYamlString,
-                        if: "${{ !env.ACT }}".toYamlString,
-                        shell: "bash".toYamlString,
+                        name: "Install the Apple certificate and provisioning profile",
+                        if: "${{ !env.ACT }}",
+                        shell: "bash",
                         env: [
-                            "BUILD_CERTIFICATE_BASE64": "${{ inputs.build_certificate_base64 }}".toYamlString,
-                            "P12_PASSWORD": "${{ inputs.p12_password }}".toYamlString
+                            "BUILD_CERTIFICATE_BASE64": "${{ inputs.build_certificate_base64 }}",
+                            "P12_PASSWORD": "${{ inputs.p12_password }}"
                         ],
-                        run: """
+                        run: .multiline("""
                         # Generate a random keychain password
                         KEYCHAIN_PASSWORD=$(openssl rand -base64 15)
                         
@@ -538,16 +534,16 @@ struct ActionConversionTests {
                         security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
                         security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
                         security list-keychain -d user -s $KEYCHAIN_PATH
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Run preternatural archive command".toYamlString,
-                        shell: "bash".toYamlString,
+                        name: "Run preternatural archive command",
+                        shell: "bash",
                         env: [
-                            "NOTARIZATION_APP_STORE_CONNECT_USERNAME": "${{ inputs.notarization_username }}".toYamlString,
-                            "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": "${{ inputs.notarization_password }}".toYamlString
+                            "NOTARIZATION_APP_STORE_CONNECT_USERNAME": "${{ inputs.notarization_username }}",
+                            "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": "${{ inputs.notarization_password }}"
                         ],
-                        run: """
+                        run: .multiline("""
                         # Construct the command as a string
                         PRETERNATURAL_CMD="script -q /dev/null preternatural archive"
                         
@@ -562,12 +558,12 @@ struct ActionConversionTests {
                         echo "Running preternatural archive command:"
                         echo "${PRETERNATURAL_CMD}"
                         eval ${PRETERNATURAL_CMD} 2>&1
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Find archive file".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Find archive file",
+                        shell: "bash",
+                        run: .multiline("""
                         ARCHIVE_FILE=$(find . -name "*Notarized*.zip" -print -quit)
                         if [ -z "$ARCHIVE_FILE" ]; then
                           echo "Error: No notarized ZIP file found"
@@ -575,15 +571,15 @@ struct ActionConversionTests {
                         fi
                         echo "ARCHIVE_FILE=$ARCHIVE_FILE" >> $GITHUB_ENV
                         echo "Found archive file: $ARCHIVE_FILE"
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Upload archive as artifact".toYamlString,
-                        uses: "actions/upload-artifact@v4".toYamlString,
+                        name: "Upload archive as artifact",
+                        uses: "actions/upload-artifact@v4",
                         with: [
-                            "name": "notarized-app".toYamlString,
-                            "path": "${{ env.ARCHIVE_FILE }}".toYamlString,
-                            "if-no-files-found": "error".toYamlString
+                            "name": "notarized-app",
+                            "path": "${{ env.ARCHIVE_FILE }}",
+                            "if-no-files-found": "error"
                         ]
                     )
                 ]
@@ -596,96 +592,96 @@ struct ActionConversionTests {
     @Test("Test Action 6 Conversion")
     func testAction6Conversion() throws {
         let action = _GHA.Action(
-            name: "Export macOS App".toYamlString,
-            description: """
+            name: "Export macOS App",
+            description: .multiline("""
             Signs, exports, packages and notarizes a macOS app in .zip or .dmg format using Preternatural CLI.
-            """.toYamlString(.multiline),
+            """),
             inputs: [
                 "xcode-version": _GHA.Action.Input(
-                    description: "Xcode version to use".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Xcode version to use"),
                     required: false,
-                    defaultValue: "16.2".toYamlString(.singleQuoted)
+                    defaultValue: .singleQuoted("16.2")
                 ),
                 "working-directory": _GHA.Action.Input(
-                    description: "Directory to run the preternatural command from".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Directory to run the preternatural command from"),
                     required: false,
-                    defaultValue: "".toYamlString(.singleQuoted)
+                    defaultValue: .singleQuoted("")
                 ),
                 "configuration": _GHA.Action.Input(
-                    description: "Build configuration (either `Debug` or `Release`; Release by default)".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Build configuration (either `Debug` or `Release`; Release by default)"),
                     required: false,
-                    defaultValue: "Release".toYamlString(.singleQuoted)
+                    defaultValue: .singleQuoted("Release")
                 ),
                 "fuck-swift-syntax": _GHA.Action.Input(
-                    description: "Enable the --fuck-swift-syntax flag".toYamlString(.singleQuoted),
+                    description: .singleQuoted("Enable the --fuck-swift-syntax flag"),
                     required: false,
-                    defaultValue: "true".toYamlString,
-                    type: .boolean
+                    defaultValue: true,
+                    type: "boolean"
                 )
             ],
             runs: _GHA.Action.Runs(
-                using: "composite".toYamlString(.singleQuoted),
+                using: .singleQuoted("composite"),
                 steps: [
                     _GHA.Step(
-                        name: "Load Secrets from 1Password".toYamlString,
-                        uses: "1password/load-secrets-action@v2".toYamlString,
+                        name: "Load Secrets from 1Password",
+                        uses: "1password/load-secrets-action@v2",
                         with: [
-                            "export-env": "true".toYamlString
+                            "export-env": true
                         ],
                         env: [
-                            "OP_SERVICE_ACCOUNT_TOKEN": "token".toYamlString(.doubleQuoted),
-                            "NOTARIZATION_APP_STORE_CONNECT_USERNAME": "op://abc/abc/abc".toYamlString,
-                            "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": "op://abc/abc/abc".toYamlString,
-                            "GITHUB_PAT": "op://abc/abc/abc".toYamlString,
-                            "DEVELOPER_ID_APPLICATION_CERTIFICATE_DATA_BASE_64": "op://abc/abc/abc".toYamlString,
-                            "DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD": "op://abc/abc/abc".toYamlString,
-                            "TEAM_ID": "op://abc/abc/abc".toYamlString
+                            "OP_SERVICE_ACCOUNT_TOKEN": .doubleQuoted("token"),
+                            "NOTARIZATION_APP_STORE_CONNECT_USERNAME": "op://abc/abc/abc",
+                            "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": "op://abc/abc/abc",
+                            "GITHUB_PAT": "op://abc/abc/abc",
+                            "DEVELOPER_ID_APPLICATION_CERTIFICATE_DATA_BASE_64": "op://abc/abc/abc",
+                            "DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD": "op://abc/abc/abc",
+                            "TEAM_ID": "op://abc/abc/abc"
                         ]
                     ),
                     _GHA.Step(
-                        name: "Setup Xcode".toYamlString,
-                        uses: "maxim-lobanov/setup-xcode@v1".toYamlString,
+                        name: "Setup Xcode",
+                        uses: "maxim-lobanov/setup-xcode@v1",
                         with: [
-                            "xcode-version": "${{ inputs.xcode_version }}".toYamlString
+                            "xcode-version": "${{ inputs.xcode_version }}"
                         ]
                     ),
                     _GHA.Step(
-                        name: "Install Preternatural".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Install Preternatural",
+                        shell: "bash",
+                        run: .multiline("""
                         set -x  # Enable verbose output
                         brew tap PreternaturalAI/preternatural
                         brew install preternatural
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Setup PAT for Private Repos".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Setup PAT for Private Repos",
+                        shell: "bash",
+                        run: .multiline("""
                         echo -e "Setup PAT for Private Repos"
                         {
                           git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
                         } > /dev/null 2>&1
                         echo -e "PAT Setup Complete"
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Restore DerivedData Cache".toYamlString,
-                        uses: "actions/cache/restore@v4".toYamlString,
+                        name: "Restore DerivedData Cache",
+                        uses: "actions/cache/restore@v4",
                         with: [
-                            "path": "~/Library/Developer/Xcode/DerivedData".toYamlString(.doubleQuoted),
-                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}".toYamlString,
-                            "restore-keys": """
+                            "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
+                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}",
+                            "restore-keys": .multiline("""
                             ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data
-                            """.toYamlString(.multiline)
+                            """)
                         ]
                     ),
                     _GHA.Step(
-                        name: "Build Archive".toYamlString,
+                        name: "Build Archive",
                         continueOnError: true,
-                        id: "archive".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        id: "archive",
+                        shell: "bash",
+                        run: .multiline("""
                         echo -e "Build Archive"
 
                         # Change directory if working-directory is provided
@@ -714,39 +710,39 @@ struct ActionConversionTests {
 
                         set +x  # Disable command echo
                         echo -e "Archive Step completed"
-                        """.toYamlString(.multiline)
+                        """)
                     ),
                     _GHA.Step(
-                        name: "Upload Notarized App as artifact".toYamlString,
-                        if: "steps.archive.outputs.archive_succeeded == 'true'".toYamlString,
-                        uses: "actions/upload-artifact@v4".toYamlString,
+                        name: "Upload Notarized App as artifact",
+                        if: "steps.archive.outputs.archive_succeeded == 'true'",
+                        uses: "actions/upload-artifact@v4",
                         with: [
-                            "name": "Notarized-App".toYamlString,
-                            "path": "**/*Notarized.zip".toYamlString(.singleQuoted),
-                            "if-no-files-found": "error".toYamlString
+                            "name": "Notarized-App",
+                            "path": .singleQuoted("**/*Notarized.zip"),
+                            "if-no-files-found": "error"
                         ]
                     ),
                     _GHA.Step(
-                        name: "Upload logs".toYamlString,
-                        uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main".toYamlString
+                        name: "Upload logs",
+                        uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main"
                     ),
                     _GHA.Step(
-                        name: "Save DerivedData Cache".toYamlString,
-                        if: "steps.archive.outputs.archive_succeeded == 'true'".toYamlString,
-                        uses: "actions/cache/save@v4".toYamlString,
+                        name: "Save DerivedData Cache",
+                        if: "steps.archive.outputs.archive_succeeded == 'true'",
+                        uses: "actions/cache/save@v4",
                         with: [
-                            "path": "~/Library/Developer/Xcode/DerivedData".toYamlString(.doubleQuoted),
-                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}".toYamlString
+                            "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
+                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}"
                         ]
                     ),
                     _GHA.Step(
-                        name: "Check archive status and fail if necessary".toYamlString,
-                        if: "steps.archive.outputs.archive_succeeded != 'true'".toYamlString,
-                        shell: "bash".toYamlString,
-                        run: """
+                        name: "Check archive status and fail if necessary",
+                        if: "steps.archive.outputs.archive_succeeded != 'true'",
+                        shell: "bash",
+                        run: .multiline("""
                         echo "Archive failed earlier in the workflow"
                         exit 1
-                        """.toYamlString(.multiline)
+                        """)
                     )
                 ]
             )
@@ -773,8 +769,8 @@ struct ActionConversionTests {
         try _GHA.Configuration.generateYAML()
         #expect(FileManager.default.fileExists(atPath: outputURL.path), "Generated YAML file doesn't exist")
         
-        let originalYAMLString = try String(contentsOf: originalFileURL, encoding: .utf8)
-        let generatedYAMLString = try String(contentsOf: outputURL, encoding: .utf8)
-        #expect(originalYAMLString == generatedYAMLString)
+        let originalFormattedValue = try String(contentsOf: originalFileURL, encoding: .utf8)
+        let generatedFormattedValue = try String(contentsOf: outputURL, encoding: .utf8)
+        #expect(originalFormattedValue == generatedFormattedValue)
     }
 }

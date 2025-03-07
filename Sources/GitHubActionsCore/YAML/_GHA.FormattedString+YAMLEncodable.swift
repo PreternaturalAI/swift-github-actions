@@ -5,12 +5,12 @@
 import Foundation
 import Yams
 
-extension _GHA.YAMLString: YAMLEncodable {
+extension _GHA.FormattedValue: YAMLEncodable {
     public func box() -> Node {
-        var node = Node(stringLiteral: self.value)
+        var node = Node(stringLiteral: self.rawValue)
         
-        switch self.type {
-        case .plain:
+        switch self {
+        case .plain, .boolean, .float, .integer:
             node.scalar?.style = .plain
         case .multiline:
             node.scalar?.style = .literal
@@ -21,15 +21,5 @@ extension _GHA.YAMLString: YAMLEncodable {
         }
         
         return node
-    }
-}
-
-extension String {
-    public var toYamlString: _GHA.YAMLString {
-        return _GHA.YAMLString(self)
-    }
-    
-    public func toYamlString(_ type: _GHA.YAMLStringType) -> _GHA.YAMLString {
-        return _GHA.YAMLString(value: self, type: type)
     }
 }
