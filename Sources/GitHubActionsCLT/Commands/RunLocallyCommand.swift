@@ -68,7 +68,7 @@ public struct RunLocallyCommand: AsyncParsableCommand {
         
         // 3. Run the selected workflow
         let result = try await WorkflowLocalRunner.runWorkflow(at: selectedWorkflow.url)
-        if let description = result.stderrString {
+        if let _ = result.terminationError, let description = result.stderrString {
             RunLocallyCommand.exit(withError: RunLocallyError.error(description))
         }
         
