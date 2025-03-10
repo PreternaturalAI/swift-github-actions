@@ -40,8 +40,9 @@ let package = Package(
             name: "GitHubActionsCore",
             dependencies: [
                 "_GitHubActionsTypes",
+                "CorePersistence",
+                "Merge",
                 "Yams",
-                "Merge"
             ]
         ),
         .target(
