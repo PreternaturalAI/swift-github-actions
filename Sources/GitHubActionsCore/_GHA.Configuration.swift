@@ -11,12 +11,13 @@ public extension _GHA {
         // MARK: - Properties
 
         public static var configurations: [ConfigurationType] = []
-        
+        public static var mainCommandFileURL: URL!
         // MARK: - Public Interface
         
         /// Configure workflows and actions with their output URL
-        public static func set(configurations: [ConfigurationType]) {
+        public static func set(configurations: [ConfigurationType], mainCommandFileURL: URL) {
             Self.configurations = configurations
+            Self.mainCommandFileURL = mainCommandFileURL
         }
     }
 }

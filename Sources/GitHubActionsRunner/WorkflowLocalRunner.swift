@@ -31,10 +31,11 @@ public final class WorkflowLocalRunner {
     private static let githubTokenKey = "GitHubActionsRunner.GITHUB_TOKEN"
     
     @discardableResult
-    public static func runWorkflow(at url: URL) async throws -> Process.RunResult {
-        // 1. Check if file exists
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw WorkflowLocalRunnerError.workflowFileNotFound(url)
+    public static func run(workflow: _GHA.Workflow) async throws -> Process.RunResult {
+        // 1. Generate workflow temp file + cleanup after
+        try _GHA.Configuration.generateYaml(for: workflow, at: workflow.tempYamlOutputURL)
+        defer {
+            try? FileManager.default.removeItem(atPath: workflow.tempYamlOutputURL.path(percentEncoded: false))
         }
         
         // 2. Get GitHub token from keychain or prompt user
@@ -57,39 +58,18 @@ public final class WorkflowLocalRunner {
         }
         
         // 3. Create local copy with modified runner
-        let localWorkflowURL = url.deletingLastPathComponent()
-            .appendingPathComponent(url.deletingPathExtension().lastPathComponent + "-local.yml")
-        
-        let originalContent = try String(contentsOf: url, encoding: .utf8)
+        let originalContent = try String(contentsOf: workflow.tempYamlOutputURL, encoding: .utf8)
         let modifiedContent = originalContent.replacingOccurrences(
             of: "ghcr.io/cirruslabs/macos-runner[^\\n]*",
             with: "macos-latest",
             options: .regularExpression
         )
-        
-        try modifiedContent.write(to: localWorkflowURL, atomically: true, encoding: .utf8)
-        defer {
-            try? FileManager.default.removeItem(at: localWorkflowURL)
-        }
+        try modifiedContent.write(to: workflow.tempYamlOutputURL, atomically: true, encoding: .utf8)
         
         // 4. Run with act
         let act = CLT.act()
-        act.currentDirectoryURL = try findNearestParentGitRepoURL(for: localWorkflowURL)
+        act.currentDirectoryURL = _GHA.Configuration.repositoryRootDirectory
         print("Running command in directory: \(act.currentDirectoryURL?.path(percentEncoded: false) ?? "-")")
-        return try await act.run(workflowURL: localWorkflowURL, gitHubToken: githubToken)
-    }
-    
-    private static func findNearestParentGitRepoURL(for url: URL) throws -> URL {
-        var currentURL = url.deletingLastPathComponent()
-        
-        while currentURL.pathComponents.count > 1 {
-            let gitFolderURL = currentURL.appendingPathComponent(".git")
-            if FileManager.default.fileExists(atPath: gitFolderURL.path) {
-                return currentURL
-            }
-            currentURL = currentURL.deletingLastPathComponent()
-        }
-        
-        throw WorkflowLocalRunnerError.noGitRepositoryFound
+        return try await act.run(workflowURL: workflow.tempYamlOutputURL, gitHubToken: githubToken)
     }
 }
