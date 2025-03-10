@@ -33,10 +33,9 @@ public struct RunLocallyCommand: AsyncParsableCommand {
     public init() {}
     
     public func run() async throws {
-        // 1. Check configurations for workflows
-        let workflows = _GHA.Configuration.configurations.compactMap { config -> (workflow: _GHA.Workflow, url: URL)? in
-            if case let .workflow(workflow, outputURL) = config {
-                return (workflow, outputURL)
+        let workflows = _GHA.Configuration.configurations.compactMap { config -> _GHA.Workflow? in
+            if case let .workflow(workflow) = config {
+                return workflow
             }
             return nil
         }
@@ -45,31 +44,12 @@ public struct RunLocallyCommand: AsyncParsableCommand {
             RunLocallyCommand.exit(withError: RunLocallyError.noWorkflowsConfigured)
         }
         
-        // 2. Handle workflow selection
-        let selectedWorkflow: (workflow: _GHA.Workflow, url: URL)
-        if workflows.count == 1 {
-            selectedWorkflow = workflows[0]
-            print("Using the workflow at: \(selectedWorkflow.url.path)")
-        } else {
-            print("Available workflows:")
-            for (index, workflow) in workflows.enumerated() {
-                print("[\(index + 1)] \(workflow.url.path)")
+        for workflow in workflows {
+            print("\nRunning Workflow:\n - Name: \(workflow.name)\n - Location: \(workflow.tempYamlOutputURL.path())\n")
+            let result = try await WorkflowLocalRunner.run(workflow: workflow)
+            if let _ = result.terminationError, let description = result.stderrString {
+                RunLocallyCommand.exit(withError: RunLocallyError.error(description))
             }
-            
-            print("\nEnter the number of the workflow to run (1-\(workflows.count)): ", terminator: "")
-            guard let input = readLine(),
-                  let selection = Int(input),
-                  selection > 0 && selection <= workflows.count else {
-                RunLocallyCommand.exit(withError: RunLocallyError.invalidWorkflowSelection)
-            }
-            
-            selectedWorkflow = workflows[selection - 1]
-        }
-        
-        // 3. Run the selected workflow
-        let result = try await WorkflowLocalRunner.runWorkflow(at: selectedWorkflow.url)
-        if let _ = result.terminationError, let description = result.stderrString {
-            RunLocallyCommand.exit(withError: RunLocallyError.error(description))
         }
         
         RunLocallyCommand.exit()

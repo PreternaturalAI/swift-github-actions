@@ -13,6 +13,6 @@ public struct GenerateCommand: AsyncParsableCommand {
     public init() {}
 
     public func run() async throws {
-        try _GHA.Configuration.generateYAML()
+        try _GHA.Configuration.generateYamlForAllConfigurations()
     }
 }

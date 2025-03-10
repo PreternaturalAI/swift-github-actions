@@ -9,7 +9,7 @@ extension _GHA.Configuration {
     
     // MARK: - YAML Generation
     
-    public static func generateYAML() throws {
+    public static func generateYamlForAllConfigurations() throws {
         guard !Self.configurations.isEmpty else {
             throw _GHA.ConfigurationError.noConfigurationSet
         }
@@ -17,10 +17,10 @@ extension _GHA.Configuration {
         do {
             for configuration in Self.configurations {
                 switch configuration {
-                case .workflow(let workflow, let outputURL):
-                    try generateWorkflowYAML(workflow, at: outputURL)
-                case .action(let action, let outputURL):
-                    try generateActionYAML(action, at: outputURL)
+                case .workflow(let workflow):
+                    try generateYaml(for: workflow, at: workflow.yamlOutputURL)
+                case .action(let action):
+                    try generateYaml(for: action, at: action.yamlOutputURL)
                 }
             }
         } catch {
@@ -35,33 +35,10 @@ extension _GHA.Configuration {
         return encoder
     }
     
-    private static func generateWorkflowYAML(_ workflow: _GHA.Workflow, at outputURL: URL) throws {
-        try FileManager.default.createDirectory(at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        
-        let yaml = try yamlEncoder.encode(workflow)
-        
-        let finalOutputURL: URL
-        if outputURL.pathExtension.lowercased() == "yml" || outputURL.pathExtension.lowercased() == "yaml" {
-            finalOutputURL = outputURL
-        } else {
-            finalOutputURL = outputURL.appendingPathComponent("workflow.yml")
-        }
-        try yaml.write(to: finalOutputURL, atomically: true, encoding: .utf8)
-        print("Generated GitHub Workflow file at:\n\(finalOutputURL.path(percentEncoded: false))\n")
-    }
-    
-    private static func generateActionYAML(_ action: _GHA.Action, at outputURL: URL) throws {
-        try FileManager.default.createDirectory(at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        
-        let yaml = try yamlEncoder.encode(action)
-        
-        let finalOutputURL: URL
-        if outputURL.pathExtension.lowercased() == "yml" || outputURL.pathExtension.lowercased() == "yaml" {
-            finalOutputURL = outputURL
-        } else {
-            finalOutputURL = outputURL.appendingPathComponent("action.yml")
-        }
-        try yaml.write(to: finalOutputURL, atomically: true, encoding: .utf8)
-        print("Generated GitHub Action file at:\n\(finalOutputURL.path(percentEncoded: false))\n")
+    public static func generateYaml(for encodable: Encodable, at url: URL) throws {
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let yaml = try yamlEncoder.encode(encodable)
+        try yaml.write(to: url, atomically: true, encoding: .utf8)
+        print("Generated YAML file at:\n\(url.path(percentEncoded: false))\n")
     }
 }
