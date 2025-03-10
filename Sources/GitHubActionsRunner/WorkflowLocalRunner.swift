@@ -26,16 +26,19 @@ public enum WorkflowLocalRunnerError: LocalizedError {
     }
 }
 
-public final class WorkflowLocalRunner {
+public enum WorkflowLocalRunner {
     private static let keychainService = "ai.preternatural.swift-github-actions"
     private static let githubTokenKey = "GitHubActionsRunner.GITHUB_TOKEN"
     
     @discardableResult
     public static func run(workflow: _GHA.Workflow) async throws -> Process.RunResult {
+        let artifactsURL = _GHA.Configuration.repositoryRootDirectory.appending(.directory(".act-artifacts"))
+        
         // 1. Generate workflow temp file + cleanup after
         try _GHA.Configuration.generateYaml(for: workflow, at: workflow.tempYamlOutputURL)
         defer {
             try? FileManager.default.removeItem(atPath: workflow.tempYamlOutputURL.path(percentEncoded: false))
+            try? FileManager.default.removeItem(atPath: artifactsURL.path(percentEncoded: false))
         }
         
         // 2. Get GitHub token from keychain or prompt user
@@ -70,6 +73,22 @@ public final class WorkflowLocalRunner {
         let act = CLT.act()
         act.currentDirectoryURL = _GHA.Configuration.repositoryRootDirectory
         print("Running command in directory: \(act.currentDirectoryURL?.path(percentEncoded: false) ?? "-")")
-        return try await act.run(workflowURL: workflow.tempYamlOutputURL, gitHubToken: githubToken)
+        let result = try await act.run(workflowURL: workflow.tempYamlOutputURL, gitHubToken: githubToken)
+        
+        // 5. Move artifacts
+        let workflowFileName = workflow.yamlOutputURL.deletingPathExtension().lastPathComponent
+        let destinationDirectory = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Library/Caches/swift-github-actions/\(workflowFileName)/\(UUID().uuidString)")
+        if FileManager.default.fileExists(atPath: artifactsURL.path(percentEncoded: false)),
+           let contents = try? FileManager.default.contentsOfDirectory(at: artifactsURL.appending(.directory("1")))
+        {
+            try? FileManager.default.copyFolders(
+                from: contents,
+                to: destinationDirectory,
+                replaceExisting: true
+            )
+            try await SystemShell().run(command: "open \(destinationDirectory.path())")
+        }
+        
+        return result
     }
 }

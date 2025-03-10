@@ -28,7 +28,9 @@ extension CommandLineTools.act {
                 "-W",
                 workflowURL.path(percentEncoded: false),
                 "-s",
-                "GITHUB_TOKEN=\(gitHubToken)"
+                "GITHUB_TOKEN=\(gitHubToken)",
+                "--artifact-server-path",
+                ".act-artifacts"
             ]
             let finalCommand = (command + arguments).joined(separator: " ")
             return try await shell.run(command: finalCommand)

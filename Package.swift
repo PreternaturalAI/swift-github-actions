@@ -58,7 +58,8 @@ let package = Package(
                 "CLT_act",
                 "_GitHubActionsTypes",
                 "GitHubActionsCore",
-                "KeychainAccess"
+                "KeychainAccess",
+                "Merge"
             ]
         ),
         .target(
