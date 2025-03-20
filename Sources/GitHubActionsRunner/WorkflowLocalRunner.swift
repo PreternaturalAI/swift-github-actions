@@ -32,6 +32,10 @@ public enum WorkflowLocalRunner {
     
     @discardableResult
     public static func run(workflow: _GHA.Workflow) async throws -> Process.RunResult {
+        /// When running the cli tool directly in Xcode, we do not have access to `PATH`.
+        /// This function updates `PATH` with the most commonly used paths for commands such as `node`.
+        try await updateEnvironmentPath()
+        
         let artifactsURL = _GHA.Configuration.repositoryRootDirectory.appending(.directory(".act-artifacts"))
         
         // 1. Generate workflow temp file + cleanup after
