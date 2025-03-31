@@ -11,7 +11,7 @@ extension _GHA.Workflow: Encodable {
         case on
         case concurrency
         case jobs
-        case env
+        case environment = "env"
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -24,8 +24,8 @@ extension _GHA.Workflow: Encodable {
         if !jobs.isEmpty {
             try container.encode(OrderedDictionaryWrapper(jobs), forKey: .jobs)
         }
-        if let env = env, !env.isEmpty {
-            try container.encode(OrderedDictionaryWrapper(env), forKey: .env)
+        if let environment = environment, !environment.isEmpty {
+            try container.encode(OrderedDictionaryWrapper(environment), forKey: .environment)
         }
     }
 }

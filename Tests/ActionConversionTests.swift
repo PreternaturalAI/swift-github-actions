@@ -27,7 +27,7 @@ struct ActionConversionTests {
                         with: [
                             "export-env": true
                         ],
-                        env: [
+                        environment: [
                             "OP_SERVICE_ACCOUNT_TOKEN": .doubleQuoted("sample_token"),
                             "GITHUB_PAT": "op://abc/abc/credential"
                         ]
@@ -324,7 +324,7 @@ struct ActionConversionTests {
                         with: [
                             "export-env": true
                         ],
-                        env: [
+                        environment: [
                             "OP_SERVICE_ACCOUNT_TOKEN": .doubleQuoted("token"),
                             "GITHUB_PAT": "op://abc/abc/abc"
                         ]
@@ -510,7 +510,7 @@ struct ActionConversionTests {
                         name: "Install the Apple certificate and provisioning profile",
                         if: "${{ !env.ACT }}",
                         shell: "bash",
-                        env: [
+                        environment: [
                             "BUILD_CERTIFICATE_BASE64": "${{ inputs.build_certificate_base64 }}",
                             "P12_PASSWORD": "${{ inputs.p12_password }}"
                         ],
@@ -539,7 +539,7 @@ struct ActionConversionTests {
                     _GHA.Step(
                         name: "Run preternatural archive command",
                         shell: "bash",
-                        env: [
+                        environment: [
                             "NOTARIZATION_APP_STORE_CONNECT_USERNAME": "${{ inputs.notarization_username }}",
                             "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": "${{ inputs.notarization_password }}"
                         ],
@@ -628,7 +628,7 @@ struct ActionConversionTests {
                         with: [
                             "export-env": true
                         ],
-                        env: [
+                        environment: [
                             "OP_SERVICE_ACCOUNT_TOKEN": .doubleQuoted("token"),
                             "NOTARIZATION_APP_STORE_CONNECT_USERNAME": "op://abc/abc/abc",
                             "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": "op://abc/abc/abc",
@@ -762,11 +762,7 @@ struct ActionConversionTests {
             .deletingLastPathComponent()
             .appendingPathComponent("\(file)-output.yml")
         
-        _GHA.Configuration.set(configurations: [
-            .action(action, outputURL: outputURL)
-        ])
-        
-        try _GHA.Configuration.generateYAML()
+        try _GHA.Configuration.generateYaml(for: action, at: outputURL)
         #expect(FileManager.default.fileExists(atPath: outputURL.path), "Generated YAML file doesn't exist")
         
         let originalFormattedValue = try String(contentsOf: originalFileURL, encoding: .utf8)

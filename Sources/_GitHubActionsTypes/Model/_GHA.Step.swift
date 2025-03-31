@@ -15,7 +15,7 @@ public extension _GHA {
         public let shell: FormattedValue?
         public let with: OrderedDictionary<String, FormattedValue>?
         public let workingDirectory: FormattedValue?
-        public let env: OrderedDictionary<String, FormattedValue>?
+        public let environment: OrderedDictionary<String, FormattedValue>?
         public let run: FormattedValue?
         
         public init(
@@ -27,7 +27,7 @@ public extension _GHA {
             shell: FormattedValue? = nil,
             with: OrderedDictionary<String, FormattedValue>? = nil,
             workingDirectory: FormattedValue? = nil,
-            env: OrderedDictionary<String, FormattedValue>? = nil,
+            environment: OrderedDictionary<String, FormattedValue>? = nil,
             run: FormattedValue? = nil
         ) {
             self.name = name
@@ -38,7 +38,7 @@ public extension _GHA {
             self.shell = shell
             self.with = with
             self.workingDirectory = workingDirectory
-            self.env = env
+            self.environment = environment
             self.run = run
         }
     }

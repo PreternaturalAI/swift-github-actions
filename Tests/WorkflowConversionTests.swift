@@ -32,10 +32,10 @@ struct WorkflowConversionTests {
                             .doubleQuoted("16.1_beta"),
                         ]
                     ]),
-                    env: [
+                    environment: [
                         "DEVELOPER_DIR": .doubleQuoted("/Applications/Xcode_${{ matrix.xcode_version }}.app/Contents/Developer")
                     ],
-                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia",
+                    runner: "ghcr.io/cirruslabs/macos-runner:sequoia",
                     steps: [
                         _GHA.Step(
                             name: "Xcode Select ${{ matrix.xcode_version }}",
@@ -50,7 +50,7 @@ struct WorkflowConversionTests {
                         ),
                         _GHA.Step(
                             name: "Clone Swallow",
-                            env: [
+                            environment: [
                                 "COMMIT": "2ac7c7f06110bc3b397677e82d3a232980c20617"
                             ],
                             run: .multiline("""
@@ -94,7 +94,7 @@ struct WorkflowConversionTests {
             ),
             jobs: [
                 "build": _GHA.Job(
-                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia",
+                    runner: "ghcr.io/cirruslabs/macos-runner:sequoia",
                     steps: [
                         _GHA.Step(
                             name: "Checkout repository",
@@ -132,7 +132,7 @@ struct WorkflowConversionTests {
                             name: "Install the Apple certificate and provisioning profile",
                             shell: "bash",
                             workingDirectory: .singleQuoted("Test-Project"),
-                            env: [
+                            environment: [
                                 "BUILD_CERTIFICATE_BASE64": .doubleQuoted("base"),
                                 "P12_PASSWORD": .doubleQuoted("123")
                             ],
@@ -165,7 +165,7 @@ struct WorkflowConversionTests {
                             name: "Run preternatural archive command",
                             shell: "bash",
                             workingDirectory: .singleQuoted("Test-Project"),
-                            env: [
+                            environment: [
                                 "NOTARIZATION_APP_STORE_CONNECT_USERNAME": .doubleQuoted("username"),
                                 "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": .doubleQuoted("password")
                             ],
@@ -218,7 +218,7 @@ struct WorkflowConversionTests {
             ),
             jobs: [
                 "build": _GHA.Job(
-                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia",
+                    runner: "ghcr.io/cirruslabs/macos-runner:sequoia",
                     steps: [
                         _GHA.Step(
                             name: "Run Update Plugin Action (preternatural)",
@@ -258,7 +258,7 @@ struct WorkflowConversionTests {
             ),
             jobs: [
                 "Tests": _GHA.Job(
-                    runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia",
+                    runner: "ghcr.io/cirruslabs/macos-runner:sequoia",
                     steps: [
                         _GHA.Step(
                             name: "Setup Xcode",
@@ -349,7 +349,7 @@ struct WorkflowConversionTests {
     func testWorkflow5Conversion() throws {
         var jobs: OrderedDictionary<String, _GHA.Job> = [:]
         jobs["archive-and-notarize"] = _GHA.Job(
-            runsOn: "ghcr.io/cirruslabs/macos-runner:sequoia",
+            runner: "ghcr.io/cirruslabs/macos-runner:sequoia",
             steps: [
                 _GHA.Step(
                     name: "Checkout repository",
@@ -400,11 +400,7 @@ struct WorkflowConversionTests {
             .deletingLastPathComponent()
             .appendingPathComponent("\(file)-output.yml")
         
-        _GHA.Configuration.set(configurations: [
-            .workflow(workflow, outputURL: outputURL)
-        ])
-        
-        try _GHA.Configuration.generateYAML()
+        try _GHA.Configuration.generateYaml(for: workflow, at: outputURL)
         #expect(FileManager.default.fileExists(atPath: outputURL.path), "Generated YAML file doesn't exist")
         
         let originalYAML = try String(contentsOf: originalFileURL, encoding: .utf8)
