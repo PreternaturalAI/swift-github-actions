@@ -6,12 +6,13 @@ import _GitHubActionsTypes
 import Foundation
 import GitHubActionsCLT
 import GitHubActionsCore
+import GitHubActionsDescription
 import Testing
 import Yams
 
-@Suite("Action Conversion Tests", .serialized)
+@Suite("High Level Action Conversion Tests", .serialized)
 @MainActor
-struct ActionConversionTests {
+struct HighLevelActionConversionTests {
 
     @Test("Test Action 1 Conversion")
     func testAction1Conversion() throws {
@@ -21,26 +22,11 @@ struct ActionConversionTests {
             runs: _GHA.Action.Runs(
                 using: .singleQuoted("composite"),
                 steps: [
-                    _GHA.Step(
-                        name: "Load Secrets From 1Password",
-                        uses: "1password/load-secrets-action@v2",
-                        with: [
-                            "export-env": true
-                        ],
-                        environment: [
-                            "OP_SERVICE_ACCOUNT_TOKEN": .doubleQuoted("sample_token"),
-                            "GITHUB_PAT": "op://abc/abc/credential"
-                        ]
+                    .loadSecretsFrom1Password(
+                        serviceAccountToken: "sample_token", 
+                        secrets: ["GITHUB_PAT": "op://abc/abc/credential"]
                     ),
-                    _GHA.Step(
-                        name: "Setup PAT for Private Repos",
-                        shell: "bash",
-                        run: .multiline("""
-                        {
-                          git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
-                        } > /dev/null 2>&1
-                        """)
-                    )
+                    .setupPATForPrivateRepos()
                 ]
             )
         )
@@ -165,48 +151,12 @@ struct ActionConversionTests {
             runs: _GHA.Action.Runs(
                 using: .singleQuoted("composite"),
                 steps: [
-                    _GHA.Step(
-                        name: "Setup Xcode",
-                        uses: "maxim-lobanov/setup-xcode@v1",
-                        with: [
-                            "xcode-version": "${{ inputs.xcode-version }}"
-                        ]
-                    ),
-                    _GHA.Step(
-                        name: "Check macOS Version",
-                        shell: "bash",
-                        run: "sw_vers"
-                    ),
-                    _GHA.Step(
-                        name: "Check Xcode Version",
-                        shell: "bash",
-                        run: "xcodebuild -version"
-                    ),
-                    _GHA.Step(
-                        name: "Check Available SDKs",
-                        shell: "bash",
-                        run: "xcodebuild -showsdks"
-                    ),
-                    _GHA.Step(
-                        name: "Install Preternatural",
-                        if: "${{ !env.ACT }}",
-                        shell: "bash",
-                        run: .multiline("""
-                        brew tap PreternaturalAI/preternatural
-                        brew install preternatural
-                        """)
-                    ),
-                    _GHA.Step(
-                        name: "Restore DerivedData Cache",
-                        uses: "cirruslabs/cache/restore@v4",
-                        with: [
-                            "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
-                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}",
-                            "restore-keys": .multiline("""
-                            ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data
-                            """)
-                        ]
-                    ),
+                    .setupXcode(version: "${{ inputs.xcode-version }}"),
+                    .checkMacOSVersion(),
+                    .checkXcodeVersion(),
+                    .checkAvailableSDKs(),
+                    .installPreternatural(ifCondition: "${{ !env.ACT }}"),
+                    .restoreDerivedDataCache(),
                     _GHA.Step(
                         name: "Execute preternatural build command",
                         continueOnError: true,
@@ -262,29 +212,9 @@ struct ActionConversionTests {
                         echo "build_succeeded=true" >> $GITHUB_OUTPUT
                         """)
                     ),
-                    _GHA.Step(
-                        name: "Upload logs",
-                        if: "success() || failure()",
-                        uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main"
-                    ),
-                    _GHA.Step(
-                        name: "Save DerivedData Cache",
-                        if: "steps.build.outputs.build_succeeded == 'true'",
-                        uses: "cirruslabs/cache/save@v4",
-                        with: [
-                            "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
-                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}"
-                        ]
-                    ),
-                    _GHA.Step(
-                        name: "Check build status and fail if necessary",
-                        if: "steps.build.outputs.build_succeeded != 'true'",
-                        shell: "bash",
-                        run: .multiline("""
-                        echo "::error::Build failed earlier in the workflow"
-                        exit 1
-                        """)
-                    )
+                    .uploadLogs(),
+                    .saveDerivedDataCache(ifCondition: "steps.build.outputs.build_succeeded == 'true'"),
+                    .checkBuildStatusAndFail(ifCondition: "steps.build.outputs.build_succeeded != 'true'")
                 ]
             )
         )
@@ -317,26 +247,11 @@ struct ActionConversionTests {
             runs: _GHA.Action.Runs(
                 using: .singleQuoted("composite"),
                 steps: [
-                    _GHA.Step(
-                        name: "Load Secrets From 1Password",
-                        uses: "1password/load-secrets-action@v2",
-                        with: [
-                            "export-env": true
-                        ],
-                        environment: [
-                            "OP_SERVICE_ACCOUNT_TOKEN": .doubleQuoted("token"),
-                            "GITHUB_PAT": "op://abc/abc/abc"
-                        ]
+                    .loadSecretsFrom1Password(
+                        serviceAccountToken: "token",
+                        secrets: ["GITHUB_PAT": "op://abc/abc/abc"]
                     ),
-                    _GHA.Step(
-                        name: "Setup PAT for Private Repos",
-                        shell: "bash",
-                        run: .multiline("""
-                        {
-                          git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
-                        } > /dev/null 2>&1
-                        """)
-                    ),
+                    .setupPATForPrivateRepos(),
                     _GHA.Step(
                         name: "Fetch URL and SHA",
                         shell: "bash",
@@ -489,22 +404,8 @@ struct ActionConversionTests {
             runs: _GHA.Action.Runs(
                 using: .singleQuoted("composite"),
                 steps: [
-                    _GHA.Step(
-                        name: "Setup Xcode",
-                        uses: "maxim-lobanov/setup-xcode@v1",
-                        with: [
-                            "xcode-version": "${{ inputs.xcode-version }}"
-                        ]
-                    ),
-                    _GHA.Step(
-                        name: "Install Preternatural",
-                        if: "${{ !env.ACT }}",
-                        shell: "bash",
-                        run: .multiline("""
-                        brew tap PreternaturalAI/preternatural
-                        brew install preternatural
-                        """)
-                    ),
+                    .setupXcode(version: "${{ inputs.xcode-version }}"),
+                    .installPreternatural(ifCondition: "${{ !env.ACT }}"),
                     _GHA.Step(
                         name: "Install the Apple certificate and provisioning profile",
                         if: "${{ !env.ACT }}",
@@ -621,14 +522,9 @@ struct ActionConversionTests {
             runs: _GHA.Action.Runs(
                 using: .singleQuoted("composite"),
                 steps: [
-                    _GHA.Step(
-                        name: "Load Secrets From 1Password",
-                        uses: "1password/load-secrets-action@v2",
-                        with: [
-                            "export-env": true
-                        ],
-                        environment: [
-                            "OP_SERVICE_ACCOUNT_TOKEN": .doubleQuoted("token"),
+                    .loadSecretsFrom1Password(
+                        serviceAccountToken: "token",
+                        secrets: [
                             "NOTARIZATION_APP_STORE_CONNECT_USERNAME": "op://abc/abc/abc",
                             "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": "op://abc/abc/abc",
                             "GITHUB_PAT": "op://abc/abc/abc",
@@ -637,41 +533,10 @@ struct ActionConversionTests {
                             "TEAM_ID": "op://abc/abc/abc"
                         ]
                     ),
-                    _GHA.Step(
-                        name: "Setup Xcode",
-                        uses: "maxim-lobanov/setup-xcode@v1",
-                        with: [
-                            "xcode-version": "${{ inputs.xcode_version }}"
-                        ]
-                    ),
-                    _GHA.Step(
-                        name: "Install Preternatural",
-                        shell: "bash",
-                        run: .multiline("""
-                        brew tap PreternaturalAI/preternatural
-                        brew install preternatural
-                        """)
-                    ),
-                    _GHA.Step(
-                        name: "Setup PAT for Private Repos",
-                        shell: "bash",
-                        run: .multiline("""
-                        {
-                          git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
-                        } > /dev/null 2>&1
-                        """)
-                    ),
-                    _GHA.Step(
-                        name: "Restore DerivedData Cache",
-                        uses: "actions/cache/restore@v4",
-                        with: [
-                            "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
-                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}",
-                            "restore-keys": .multiline("""
-                            ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data
-                            """)
-                        ]
-                    ),
+                    .setupXcode(version: "${{ inputs.xcode_version }}"),
+                    .installPreternatural(),
+                    .setupPATForPrivateRepos(),
+                    .restoreDerivedDataCache(provider: "actions"),
                     _GHA.Step(
                         name: "Build Archive",
                         continueOnError: true,
@@ -708,39 +573,10 @@ struct ActionConversionTests {
                         echo -e "Archive Step completed"
                         """)
                     ),
-                    _GHA.Step(
-                        name: "Upload Notarized App as artifact",
-                        if: "steps.archive.outputs.archive_succeeded == 'true'",
-                        uses: "actions/upload-artifact@v4",
-                        with: [
-                            "name": "Notarized-App",
-                            "path": .singleQuoted("**/*Notarized.zip"),
-                            "if-no-files-found": "error"
-                        ]
-                    ),
-                    _GHA.Step(
-                        name: "Upload logs",
-                        if: "success() || failure()",
-                        uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main"
-                    ),
-                    _GHA.Step(
-                        name: "Save DerivedData Cache",
-                        if: "steps.archive.outputs.archive_succeeded == 'true'",
-                        uses: "actions/cache/save@v4",
-                        with: [
-                            "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
-                            "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}"
-                        ]
-                    ),
-                    _GHA.Step(
-                        name: "Check build status and fail if necessary",
-                        if: "steps.archive.outputs.archive_succeeded != 'true'",
-                        shell: "bash",
-                        run: .multiline("""
-                        echo "::error::Build failed earlier in the workflow"
-                        exit 1
-                        """)
-                    )
+                    .uploadNotarizedApp(),
+                    .uploadLogs(),
+                    .saveDerivedDataCache(ifCondition: "steps.archive.outputs.archive_succeeded == 'true'", provider: "actions"),
+                    .checkBuildStatusAndFail(ifCondition: "steps.archive.outputs.archive_succeeded != 'true'")
                 ]
             )
         )
@@ -757,7 +593,7 @@ struct ActionConversionTests {
         
         let outputURL = originalFileURL
             .deletingLastPathComponent()
-            .appendingPathComponent("\(file)-output.yml")
+            .appendingPathComponent("\(file)-higher-level-output.yml")
         
         try _GHA.Configuration.generateYaml(for: action, at: outputURL)
         #expect(FileManager.default.fileExists(atPath: outputURL.path), "Generated YAML file doesn't exist")

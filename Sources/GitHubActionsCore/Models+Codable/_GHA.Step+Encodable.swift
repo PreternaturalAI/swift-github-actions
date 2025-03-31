@@ -15,7 +15,7 @@ extension _GHA.Step: Encodable {
         case shell
         case with
         case workingDirectory = "working-directory"
-        case env
+        case environment = "env"
         case run
     }
     
@@ -31,8 +31,8 @@ extension _GHA.Step: Encodable {
             try container.encode(OrderedDictionaryWrapper(with), forKey: .with)
         }
         try container.encodeIfPresent(workingDirectory, forKey: .workingDirectory)
-        if let env = env, !env.isEmpty {
-            try container.encode(OrderedDictionaryWrapper(env), forKey: .env)
+        if let environment = environment, !environment.isEmpty {
+            try container.encode(OrderedDictionaryWrapper(environment), forKey: .environment)
         }
         try container.encodeIfPresent(run, forKey: .run)
     }

@@ -6,13 +6,14 @@ import _GitHubActionsTypes
 import Foundation
 import GitHubActionsCLT
 import GitHubActionsCore
+import GitHubActionsDescription
 import Testing
 import Yams
 import OrderedCollections
 
-@Suite("Workflow Conversion Tests", .serialized)
+@Suite("High Level Workflow Conversion Tests", .serialized)
 @MainActor
-struct WorkflowConversionTests {
+struct HighLevelWorkflowConversionTests {
 
     @Test("Test Workflow 1 Conversion")
     func testWorkflow1Conversion() throws {
@@ -41,14 +42,8 @@ struct WorkflowConversionTests {
                             name: "Xcode Select ${{ matrix.xcode_version }}",
                             run: "sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode_version }}.app"
                         ),
-                        _GHA.Step(
-                            name: "Get swift version",
-                            run: "swift --version"
-                        ),
-                        _GHA.Step(
-                            name: "Checkout repository",
-                            uses: "actions/checkout@v2"
-                        ),
+                        .checkSwiftVersion(),
+                        .checkoutRepository(version: "v2"),
                         _GHA.Step(
                             name: "Clone Swallow",
                             environment: [
@@ -97,18 +92,8 @@ struct WorkflowConversionTests {
                 "build": _GHA.Job(
                     runner: "ghcr.io/cirruslabs/macos-runner:sequoia",
                     steps: [
-                        _GHA.Step(
-                            name: "Checkout repository",
-                            uses: "actions/checkout@v3"
-                        ),
-                        _GHA.Step(
-                            name: "Install Preternatural",
-                            shell: "bash",
-                            run: .multiline("""
-                            brew tap PreternaturalAI/preternatural
-                            brew install preternatural
-                            """)
-                        ),
+                        .checkoutRepository(version: "v3"),
+                        .installPreternatural(),
                         _GHA.Step(
                             name: "Test Preternatural Installation",
                             run: .multiline("""
@@ -122,13 +107,7 @@ struct WorkflowConversionTests {
                             brew info preternatural
                             """)
                         ),
-                        _GHA.Step(
-                            name: "Setup Xcode",
-                            uses: "maxim-lobanov/setup-xcode@v1",
-                            with: [
-                                "xcode-version": "${{ inputs.xcode_version }}"
-                            ]
-                        ),
+                        .setupXcode(version: "${{ inputs.xcode_version }}"),
                         _GHA.Step(
                             name: "Install the Apple certificate and provisioning profile",
                             shell: "bash",
@@ -261,44 +240,12 @@ struct WorkflowConversionTests {
                 "Tests": _GHA.Job(
                     runner: "ghcr.io/cirruslabs/macos-runner:sequoia",
                     steps: [
-                        _GHA.Step(
-                            name: "Setup Xcode",
-                            uses: "maxim-lobanov/setup-xcode@v1",
-                            with: [
-                                "xcode-version": "16.2"
-                            ]
-                        ),
-                        _GHA.Step(
-                            name: "Authorize Preternatural GitHub",
-                            uses: "PreternaturalAI/internal-github-action/preternatural-authorize-github@main"
-                        ),
-                        _GHA.Step(
-                            name: "Get swift version",
-                            run: "swift --version"
-                        ),
-                        _GHA.Step(
-                            name: "Checkout repository",
-                            uses: "actions/checkout@v4"
-                        ),
-                        _GHA.Step(
-                            name: "Install Preternatural",
-                            shell: "bash",
-                            run: .multiline("""
-                            brew tap PreternaturalAI/preternatural
-                            brew install preternatural
-                            """)
-                        ),
-                        _GHA.Step(
-                            name: "Restore DerivedData Cache",
-                            uses: "cirruslabs/cache/restore@v4",
-                            with: [
-                                "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
-                                "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}",
-                                "restore-keys": .multiline("""
-                                ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data
-                                """)
-                            ]
-                        ),
+                        .setupXcode(version: "16.2"),
+                        .authorizePreternaturalGitHub(),
+                        .checkSwiftVersion(),
+                        .checkoutRepository(version: "v4"),
+                        .installPreternatural(),
+                        .restoreDerivedDataCache(),
                         _GHA.Step(
                             name: "Run Preternatural Test Command",
                             id: "test",
@@ -319,20 +266,8 @@ struct WorkflowConversionTests {
                             exit 0
                             """)
                         ),
-                        _GHA.Step(
-                            name: "Upload logs",
-                            if: "success() || failure()",
-                            uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main"
-                        ),
-                        _GHA.Step(
-                            name: "Save DerivedData Cache",
-                            if: "steps.test.outputs.test_failed != 'true'",
-                            uses: "cirruslabs/cache/save@v4",
-                            with: [
-                                "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
-                                "key": "${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}"
-                            ]
-                        ),
+                        .uploadLogs(),
+                        .saveDerivedDataCache(ifCondition: "steps.test.outputs.test_failed != 'true'"),
                         _GHA.Step(
                             name: "Fail if tests failed",
                             if: "steps.test.outputs.test_failed == 'true'",
@@ -353,10 +288,7 @@ struct WorkflowConversionTests {
         jobs["archive-and-notarize"] = _GHA.Job(
             runner: "ghcr.io/cirruslabs/macos-runner:sequoia",
             steps: [
-                _GHA.Step(
-                    name: "Checkout repository",
-                    uses: "actions/checkout@v4"
-                ),
+                .checkoutRepository(version: "v4"),
                 _GHA.Step(
                     uses: "oven-sh/setup-bun@v2",
                     with: [
@@ -400,7 +332,7 @@ struct WorkflowConversionTests {
         
         let outputURL = originalFileURL
             .deletingLastPathComponent()
-            .appendingPathComponent("\(file)-output.yml")
+            .appendingPathComponent("\(file)-higher-level-output.yml")
         
         try _GHA.Configuration.generateYaml(for: workflow, at: outputURL)
         #expect(FileManager.default.fileExists(atPath: outputURL.path), "Generated YAML file doesn't exist")

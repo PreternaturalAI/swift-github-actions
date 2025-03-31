@@ -4,7 +4,7 @@ description: |
 runs:
   using: 'composite'
   steps:
-    - name: Load Secrets from 1Password
+    - name: Load Secrets From 1Password
       uses: 1password/load-secrets-action@v2
       with:
         export-env: true

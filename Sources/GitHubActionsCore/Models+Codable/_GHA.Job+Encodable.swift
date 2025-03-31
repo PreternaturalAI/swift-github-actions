@@ -8,8 +8,8 @@ import OrderedCollections
 extension _GHA.Job: Encodable {
     private enum CodingKeys: String, CodingKey {
         case strategy
-        case env
-        case runsOn = "runs-on"
+        case environment = "env"
+        case runner = "runs-on"
         case steps
         case needs
     }
@@ -18,10 +18,10 @@ extension _GHA.Job: Encodable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         
         try container.encodeIfPresent(strategy, forKey: .strategy)
-        if let env = env, !env.isEmpty {
-            try container.encode(OrderedDictionaryWrapper(env), forKey: .env)
+        if let environment = environment, !environment.isEmpty {
+            try container.encode(OrderedDictionaryWrapper(environment), forKey: .environment)
         }
-        try container.encodeIfPresent(runsOn, forKey: .runsOn)
+        try container.encodeIfPresent(runner, forKey: .runner)
         try container.encode(steps, forKey: .steps)
         try container.encodeIfPresent(needs, forKey: .needs)
     }

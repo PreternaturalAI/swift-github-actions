@@ -11,20 +11,20 @@ public extension _GHA {
         public let on: Triggers
         public let concurrency: OrderedDictionary<String, FormattedValue>?
         public let jobs: OrderedDictionary<String, Job>
-        public let env: OrderedDictionary<String, FormattedValue>?
+        public let environment: OrderedDictionary<String, FormattedValue>?
 
         public init(
             name: FormattedValue,
             on: Triggers,
             concurrency: OrderedDictionary<String, FormattedValue>? = nil,
             jobs: OrderedDictionary<String, Job>,
-            env: OrderedDictionary<String, FormattedValue>? = nil
+            environment: OrderedDictionary<String, FormattedValue>? = nil
         ) {
             self.name = name
             self.on = on
             self.concurrency = concurrency
             self.jobs = jobs
-            self.env = env
+            self.environment = environment
         }
     }
 }

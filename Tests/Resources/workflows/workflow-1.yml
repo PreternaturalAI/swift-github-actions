@@ -19,7 +19,8 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode_version }}.app
       - name: Get swift version
         run: swift --version
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
       - name: Clone Swallow
         env:
           COMMIT: 2ac7c7f06110bc3b397677e82d3a232980c20617
