@@ -13,12 +13,13 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.2'
+          xcode-version: 16.2
       - name: Authorize Preternatural GitHub
         uses: PreternaturalAI/internal-github-action/preternatural-authorize-github@main
       - name: Get swift version
         run: swift --version
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Install Preternatural
         shell: bash
         run: |-

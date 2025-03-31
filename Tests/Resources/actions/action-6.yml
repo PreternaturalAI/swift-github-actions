@@ -22,7 +22,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Load Secrets from 1Password
+    - name: Load Secrets From 1Password
       uses: 1password/load-secrets-action@v2
       with:
         export-env: true
@@ -41,17 +41,14 @@ runs:
     - name: Install Preternatural
       shell: bash
       run: |-
-        set -x  # Enable verbose output
         brew tap PreternaturalAI/preternatural
         brew install preternatural
     - name: Setup PAT for Private Repos
       shell: bash
       run: |-
-        echo -e "Setup PAT for Private Repos"
         {
           git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
         } > /dev/null 2>&1
-        echo -e "PAT Setup Complete"
     - name: Restore DerivedData Cache
       uses: actions/cache/restore@v4
       with:
@@ -100,6 +97,7 @@ runs:
         path: '**/*Notarized.zip'
         if-no-files-found: error
     - name: Upload logs
+      if: success() || failure()
       uses: PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main
     - name: Save DerivedData Cache
       if: steps.archive.outputs.archive_succeeded == 'true'
@@ -107,9 +105,9 @@ runs:
       with:
         path: "~/Library/Developer/Xcode/DerivedData"
         key: ${{ runner.os }}-${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-derived-data-${{ hashFiles('**/*') }}
-    - name: Check archive status and fail if necessary
+    - name: Check build status and fail if necessary
       if: steps.archive.outputs.archive_succeeded != 'true'
       shell: bash
       run: |-
-        echo "Archive failed earlier in the workflow"
+        echo "::error::Build failed earlier in the workflow"
         exit 1

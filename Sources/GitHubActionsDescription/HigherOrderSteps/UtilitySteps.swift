@@ -43,24 +43,4 @@ public extension _GHA.Step {
             run: "xcodebuild -showsdks"
         )
     }
-    
-    /// Creates a step to fail with a custom message
-    /// - Parameters:
-    ///   - message: Error message
-    ///   - ifCondition: Condition to determine if the step should run
-    /// - Returns: A step that fails with a custom message
-    static func failWithMessage(
-        message: String,
-        ifCondition: String? = nil
-    ) -> Self {
-        .init(
-            name: "Fail with error",
-            if: ifCondition != nil ? .plain(ifCondition!) : nil,
-            shell: "bash",
-            run: .multiline("""
-            echo "::error::\(message)"
-            exit 1
-            """)
-        )
-    }
 } 

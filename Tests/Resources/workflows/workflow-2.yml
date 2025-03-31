@@ -8,8 +8,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Install Preternatural
+        shell: bash
         run: |-
-          set -x  # Enable verbose output
           brew tap PreternaturalAI/preternatural
           brew install preternatural
       - name: Test Preternatural Installation

@@ -46,6 +46,7 @@ struct WorkflowConversionTests {
                             run: "swift --version"
                         ),
                         _GHA.Step(
+                            name: "Checkout repository",
                             uses: "actions/checkout@v2"
                         ),
                         _GHA.Step(
@@ -102,8 +103,8 @@ struct WorkflowConversionTests {
                         ),
                         _GHA.Step(
                             name: "Install Preternatural",
+                            shell: "bash",
                             run: .multiline("""
-                            set -x  # Enable verbose output
                             brew tap PreternaturalAI/preternatural
                             brew install preternatural
                             """)
@@ -264,7 +265,7 @@ struct WorkflowConversionTests {
                             name: "Setup Xcode",
                             uses: "maxim-lobanov/setup-xcode@v1",
                             with: [
-                                "xcode-version": .singleQuoted("16.2")
+                                "xcode-version": "16.2"
                             ]
                         ),
                         _GHA.Step(
@@ -276,6 +277,7 @@ struct WorkflowConversionTests {
                             run: "swift --version"
                         ),
                         _GHA.Step(
+                            name: "Checkout repository",
                             uses: "actions/checkout@v4"
                         ),
                         _GHA.Step(

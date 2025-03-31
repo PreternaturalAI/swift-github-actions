@@ -14,7 +14,7 @@ public extension _GHA.Step {
             name: "Setup Xcode",
             uses: "maxim-lobanov/setup-xcode@v1",
             with: [
-                "xcode-version": .singleQuoted(version)
+                "xcode-version": .plain(version)
             ]
         )
     }

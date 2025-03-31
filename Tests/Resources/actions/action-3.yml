@@ -42,10 +42,8 @@ runs:
       if: ${{ !env.ACT }}
       shell: bash
       run: |-
-        echo "::group::Installing Preternatural via Homebrew"
         brew tap PreternaturalAI/preternatural
         brew install preternatural
-        echo "::endgroup::"
     - name: Restore DerivedData Cache
       uses: cirruslabs/cache/restore@v4
       with:
@@ -106,6 +104,7 @@ runs:
 
         echo "build_succeeded=true" >> $GITHUB_OUTPUT
     - name: Upload logs
+      if: success() || failure()
       uses: PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main
     - name: Save DerivedData Cache
       if: steps.build.outputs.build_succeeded == 'true'

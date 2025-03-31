@@ -26,7 +26,7 @@ public extension _GHA.Step {
             uses: .plain(providerAction),
             with: [
                 "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
-                "key": .doubleQuoted(key),
+                "key": .plain(key),
                 "restore-keys": .multiline(restoreKeys)
             ]
         )
@@ -50,10 +50,10 @@ public extension _GHA.Step {
         return .init(
             name: "Save DerivedData Cache",
             if: ifCondition != nil ? .plain(ifCondition!) : nil,
-            uses: .doubleQuoted(providerAction),
+            uses: .plain(providerAction),
             with: [
                 "path": .doubleQuoted("~/Library/Developer/Xcode/DerivedData"),
-                "key": .doubleQuoted(key)
+                "key": .plain(key)
             ]
         )
     }

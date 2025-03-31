@@ -22,7 +22,7 @@ struct ActionConversionTests {
                 using: .singleQuoted("composite"),
                 steps: [
                     _GHA.Step(
-                        name: "Load Secrets from 1Password",
+                        name: "Load Secrets From 1Password",
                         uses: "1password/load-secrets-action@v2",
                         with: [
                             "export-env": true
@@ -192,10 +192,8 @@ struct ActionConversionTests {
                         if: "${{ !env.ACT }}",
                         shell: "bash",
                         run: .multiline("""
-                        echo "::group::Installing Preternatural via Homebrew"
                         brew tap PreternaturalAI/preternatural
                         brew install preternatural
-                        echo "::endgroup::"
                         """)
                     ),
                     _GHA.Step(
@@ -266,6 +264,7 @@ struct ActionConversionTests {
                     ),
                     _GHA.Step(
                         name: "Upload logs",
+                        if: "success() || failure()",
                         uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main"
                     ),
                     _GHA.Step(
@@ -319,7 +318,7 @@ struct ActionConversionTests {
                 using: .singleQuoted("composite"),
                 steps: [
                     _GHA.Step(
-                        name: "Load Secrets From 1Password and Export Environment Variables",
+                        name: "Load Secrets From 1Password",
                         uses: "1password/load-secrets-action@v2",
                         with: [
                             "export-env": true
@@ -623,7 +622,7 @@ struct ActionConversionTests {
                 using: .singleQuoted("composite"),
                 steps: [
                     _GHA.Step(
-                        name: "Load Secrets from 1Password",
+                        name: "Load Secrets From 1Password",
                         uses: "1password/load-secrets-action@v2",
                         with: [
                             "export-env": true
@@ -649,7 +648,6 @@ struct ActionConversionTests {
                         name: "Install Preternatural",
                         shell: "bash",
                         run: .multiline("""
-                        set -x  # Enable verbose output
                         brew tap PreternaturalAI/preternatural
                         brew install preternatural
                         """)
@@ -658,11 +656,9 @@ struct ActionConversionTests {
                         name: "Setup PAT for Private Repos",
                         shell: "bash",
                         run: .multiline("""
-                        echo -e "Setup PAT for Private Repos"
                         {
                           git config --global url."https://$GITHUB_PAT@github.com/".insteadOf "https://github.com/"
                         } > /dev/null 2>&1
-                        echo -e "PAT Setup Complete"
                         """)
                     ),
                     _GHA.Step(
@@ -724,6 +720,7 @@ struct ActionConversionTests {
                     ),
                     _GHA.Step(
                         name: "Upload logs",
+                        if: "success() || failure()",
                         uses: "PreternaturalAI/preternatural-github-actions/preternatural-upload-logs@main"
                     ),
                     _GHA.Step(
@@ -736,11 +733,11 @@ struct ActionConversionTests {
                         ]
                     ),
                     _GHA.Step(
-                        name: "Check archive status and fail if necessary",
+                        name: "Check build status and fail if necessary",
                         if: "steps.archive.outputs.archive_succeeded != 'true'",
                         shell: "bash",
                         run: .multiline("""
-                        echo "Archive failed earlier in the workflow"
+                        echo "::error::Build failed earlier in the workflow"
                         exit 1
                         """)
                     )

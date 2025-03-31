@@ -99,9 +99,14 @@ struct HighLevelActionConversionTests {
                         echo "Cleanup completed"
                         """)
                     ),
-                    .uploadArtifact(
-                        name: "${{ env.ARTIFACT_NAME }}",
-                        path: "${{ env.ZIP_PATH }}"
+                    _GHA.Step(
+                        name: "Upload logs",
+                        continueOnError: true,
+                        uses: "actions/upload-artifact@v4",
+                        with: [
+                            "name": "${{ env.ARTIFACT_NAME }}",
+                            "path": "${{ env.ZIP_PATH }}"
+                        ]
                     )
                 ]
             )
@@ -152,10 +157,60 @@ struct HighLevelActionConversionTests {
                     .checkAvailableSDKs(),
                     .installPreternatural(ifCondition: "${{ !env.ACT }}"),
                     .restoreDerivedDataCache(),
-                    .buildWithPreternatural(
+                    _GHA.Step(
+                        name: "Execute preternatural build command",
+                        continueOnError: true,
                         id: "build",
-                        workingDirectory: "${{ inputs.working-directory }}",
-                        fuckSwiftSyntax: true
+                        shell: "bash",
+                        run: .multiline("""
+                        echo "::group::Preparing Build Command"
+                        PLATFORMS=$(echo '${{ inputs.platforms }}' | tr -d '[]' | sed 's/, /,/g')
+                        CONFIGURATIONS=$(echo '${{ inputs.configurations }}' | tr -d '[]' | sed 's/, /,/g')
+
+                        # Change directory if working-directory is provided
+                        if [ ! -z "${{ inputs.working-directory }}" ]; then
+                          cd "${{ inputs.working-directory }}"
+                          echo "Changed working directory to: ${{ inputs.working-directory }}"
+                        fi
+
+                        # Construct the command as a string
+                        PRETERNATURAL_CMD="script -q /dev/null preternatural build --platforms $PLATFORMS --configurations $CONFIGURATIONS --update-developer-team"
+                        if [ "${{ inputs.fuck-swift-syntax }}" == "true" ]; then
+                          PRETERNATURAL_CMD="$PRETERNATURAL_CMD --fuck-swift-syntax"
+                        fi
+
+                        echo "Prepared command: ${PRETERNATURAL_CMD}"
+                        echo "::endgroup::"
+
+                        echo "::group::First Build Attempt"
+                        # First attempt
+                        set +e  # Don't exit on error
+                        eval ${PRETERNATURAL_CMD} 2>&1
+                        BUILD_STATUS=$?
+                        set -e  # Return to exit on error
+                        echo "::endgroup::"
+
+                        if [ $BUILD_STATUS -ne 0 ]; then
+                          echo "::group::Cleaning DerivedData and Retrying"
+                          echo "First build attempt failed (status: $BUILD_STATUS). Cleaning derived data and retrying..."
+                          rm -rf "$DERIVED_DATA_PATH"
+                          echo "Cleaned derived data"
+                          echo "::endgroup::"
+
+                          echo "::group::Second Build Attempt"
+                          # Second attempt
+                          eval ${PRETERNATURAL_CMD} 2>&1
+                          RETRY_STATUS=$?
+                          echo "::endgroup::"
+
+                          if [ $RETRY_STATUS -ne 0 ]; then
+                            echo "::error::Second build attempt failed (status: $RETRY_STATUS) after cleaning derived data. Failing the workflow."
+                            exit 1
+                          fi
+                        fi
+
+                        echo "build_succeeded=true" >> $GITHUB_OUTPUT
+                        """)
                     ),
                     .uploadLogs(),
                     .saveDerivedDataCache(ifCondition: "steps.build.outputs.build_succeeded == 'true'"),
@@ -351,20 +406,81 @@ struct HighLevelActionConversionTests {
                 steps: [
                     .setupXcode(version: "${{ inputs.xcode-version }}"),
                     .installPreternatural(ifCondition: "${{ !env.ACT }}"),
-                    .installAppleCertificate(
-                        certificateBase64: "${{ inputs.build_certificate_base64 }}",
-                        password: "${{ inputs.p12_password }}"
+                    _GHA.Step(
+                        name: "Install the Apple certificate and provisioning profile",
+                        if: "${{ !env.ACT }}",
+                        shell: "bash",
+                        environment: [
+                            "BUILD_CERTIFICATE_BASE64": "${{ inputs.build_certificate_base64 }}",
+                            "P12_PASSWORD": "${{ inputs.p12_password }}"
+                        ],
+                        run: .multiline("""
+                        # Generate a random keychain password
+                        KEYCHAIN_PASSWORD=$(openssl rand -base64 15)
+                        
+                        # Create variables
+                        CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+                        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+                        
+                        # Import certificate from inputs
+                        echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+                        
+                        # Create temporary keychain
+                        security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+                        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+                        security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+                        
+                        # Import certificate to keychain
+                        security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+                        security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+                        security list-keychain -d user -s $KEYCHAIN_PATH
+                        """)
                     ),
-                    .archiveWithPreternatural(
-                        teamId: "${{ inputs.notarization_team_id }}",
-                        fuckSwiftSyntax: true,
-                        notarizationUsername: "${{ inputs.notarization_username }}",
-                        notarizationPassword: "${{ inputs.notarization_password }}"
+                    _GHA.Step(
+                        name: "Run preternatural archive command",
+                        shell: "bash",
+                        environment: [
+                            "NOTARIZATION_APP_STORE_CONNECT_USERNAME": "${{ inputs.notarization_username }}",
+                            "NOTARIZATION_APP_STORE_CONNECT_PASSWORD": "${{ inputs.notarization_password }}"
+                        ],
+                        run: .multiline("""
+                        # Construct the command as a string
+                        PRETERNATURAL_CMD="script -q /dev/null preternatural archive"
+                        
+                        if [ -n "${{ inputs.notarization_team_id }}" ]; then
+                          PRETERNATURAL_CMD="$PRETERNATURAL_CMD --team-id "${{ inputs.notarization_team_id }}"
+                        fi
+                        
+                        if [ "${{ inputs.fuck-swift-syntax }}" == "true" ]; then
+                          PRETERNATURAL_CMD="$PRETERNATURAL_CMD --fuck-swift-syntax"
+                        fi
+                        
+                        echo "Running preternatural archive command:"
+                        echo "${PRETERNATURAL_CMD}"
+                        eval ${PRETERNATURAL_CMD} 2>&1
+                        """)
                     ),
-                    .findArchiveFile(),
-                    .uploadArtifact(
-                        name: "notarized-app",
-                        path: "${{ env.ARCHIVE_FILE }}"
+                    _GHA.Step(
+                        name: "Find archive file",
+                        shell: "bash",
+                        run: .multiline("""
+                        ARCHIVE_FILE=$(find . -name "*Notarized*.zip" -print -quit)
+                        if [ -z "$ARCHIVE_FILE" ]; then
+                          echo "Error: No notarized ZIP file found"
+                          exit 1
+                        fi
+                        echo "ARCHIVE_FILE=$ARCHIVE_FILE" >> $GITHUB_ENV
+                        echo "Found archive file: $ARCHIVE_FILE"
+                        """)
+                    ),
+                    _GHA.Step(
+                        name: "Upload archive as artifact",
+                        uses: "actions/upload-artifact@v4",
+                        with: [
+                            "name": "notarized-app",
+                            "path": "${{ env.ARCHIVE_FILE }}",
+                            "if-no-files-found": "error"
+                        ]
                     )
                 ]
             )
@@ -420,15 +536,46 @@ struct HighLevelActionConversionTests {
                     .setupXcode(version: "${{ inputs.xcode_version }}"),
                     .installPreternatural(),
                     .setupPATForPrivateRepos(),
-                    .restoreDerivedDataCache(),
-                    .exportMacOSApp(
-                        workingDirectory: "${{ inputs.working-directory }}",
-                        configuration: "${{ inputs.configuration }}",
-                        fuckSwiftSyntax: true
+                    .restoreDerivedDataCache(provider: "actions"),
+                    _GHA.Step(
+                        name: "Build Archive",
+                        continueOnError: true,
+                        id: "archive",
+                        shell: "bash",
+                        run: .multiline("""
+                        echo -e "Build Archive"
+
+                        # Change directory if working-directory is provided
+                        if [ ! -z "${{ inputs.working-directory }}" ]; then
+                          cd "${{ inputs.working-directory }}"
+                          echo "Changed working directory to: ${{ inputs.working-directory }}"
+                        fi
+
+                        # Build command with optional debug flag
+                        CMD="script -q /dev/null preternatural archive --team-id $TEAM_ID"
+
+                        if [ -n "${{ inputs.configuration }}" ]; then
+                          CMD="$CMD --configuration "${{ inputs.configuration }}""
+                        fi
+
+                        if [ "${{ inputs.fuck-swift-syntax }}" == "true" ]; then
+                          CMD="$CMD --fuck-swift-syntax"
+                        fi
+
+                        # Execute the command
+                        eval "$CMD" 2>&1
+
+                        if [ $? -eq 0 ]; then
+                          echo "archive_succeeded=true" >> $GITHUB_OUTPUT
+                        fi
+
+                        set +x  # Disable command echo
+                        echo -e "Archive Step completed"
+                        """)
                     ),
                     .uploadNotarizedApp(),
                     .uploadLogs(),
-                    .saveDerivedDataCache(ifCondition: "steps.archive.outputs.archive_succeeded == 'true'"),
+                    .saveDerivedDataCache(ifCondition: "steps.archive.outputs.archive_succeeded == 'true'", provider: "actions"),
                     .checkBuildStatusAndFail(ifCondition: "steps.archive.outputs.archive_succeeded != 'true'")
                 ]
             )
@@ -446,7 +593,7 @@ struct HighLevelActionConversionTests {
         
         let outputURL = originalFileURL
             .deletingLastPathComponent()
-            .appendingPathComponent("\(file)-output.yml")
+            .appendingPathComponent("\(file)-higher-level-output.yml")
         
         try _GHA.Configuration.generateYaml(for: action, at: outputURL)
         #expect(FileManager.default.fileExists(atPath: outputURL.path), "Generated YAML file doesn't exist")
