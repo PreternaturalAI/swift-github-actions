@@ -75,6 +75,7 @@ let package = Package(
             name: "GitHubActionsTests",
             dependencies: [
                 "GitHubActionsCLT",
+                "GitHubActionsDescription"
             ],
             path: "Tests",
             resources: [
