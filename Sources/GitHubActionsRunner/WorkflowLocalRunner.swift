@@ -45,11 +45,16 @@ public enum WorkflowLocalRunner {
             try? FileManager.default.removeItem(atPath: artifactsURL.path(percentEncoded: false))
         }
         
-        // 2. Get GitHub token from keychain or prompt user
+        // 2. Get GitHub token from environment, keychain or prompt user
         let keychain = Keychain(service: keychainService)
         var githubToken = ""
         do {
-            if let storedToken = try keychain.get(githubTokenKey) {
+            // First check if GITHUB_TOKEN is set in the environment
+            if let envToken = ProcessInfo.processInfo.environment["GITHUB_TOKEN"], !envToken.isEmpty {
+                githubToken = envToken
+            }
+            // If no environment token, try keychain
+            else if let storedToken = try keychain.get(githubTokenKey) {
                 githubToken = storedToken
             } else {
                 print("\nGITHUB_TOKEN is required to run act locally.")
